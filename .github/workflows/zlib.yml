@@ -1,0 +1,53 @@
+name: Build zlib for Android ARM64
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential wget curl unzip git
+
+      - name: Download and Extract zlib
+        run: |
+          wget https://github.com/madler/zlib/archive/refs/tags/v1.2.13.tar.gz -O zlib-1.2.13.tar.gz
+          tar -xvf zlib-1.2.13.tar.gz
+          cd zlib-1.2.13
+
+      - name: Compile zlib
+        run: |
+          cd zlib-1.2.13
+          ./configure
+          make -j$(nproc)
+
+      - name: Install zlib to Simulated Android Root (`/data`)
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/android-rootfs/data
+          cd zlib-1.2.13
+          make install prefix=$GITHUB_WORKSPACE/android-rootfs/data
+
+      - name: Check zlib Installation
+        run: |
+          echo "Contents of android-rootfs/data:"
+          ls -lh $GITHUB_WORKSPACE/android-rootfs/data
+
+      - name: Package zlib Installation
+        run: |
+          tar -czvf zlib-android-data.tar.gz -C android-rootfs/data .
+
+      - name: Upload zlib Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: zlib-android-data
+          path: zlib-android-data.tar.gz

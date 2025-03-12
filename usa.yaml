@@ -1,0 +1,83 @@
+mixed-port: 7890
+allow-lan: true
+mode: Rule
+log-level: debug
+external-controller: :9090
+
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  default-nameserver:
+    - 8.8.8.8
+    - 1.1.1.1
+  enhanced-mode: fake-ip
+  nameserver:
+    - tls://8.8.8.8
+    - tls://1.1.1.1
+    - tls://9.9.9.9
+    - tls://1.0.0.1
+    - tls://8.8.4.4
+  fallback:
+    - tls://9.9.9.10
+    - tls://208.67.222.222
+    - tls://185.228.168.168
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+
+proxies:
+  - name: "Vless"
+    type: vless
+    server: v2.chuxta.xyz
+    port: 24324
+    uuid: 5d756203-bd00-4c7b-c449-e96e3c7446e4
+    cipher: none
+    udp: true
+    tls: true
+    skip-cert-verify: true
+    servername: v2.chuxta.xyz
+    network: ws
+    ws-opts:
+      path: "/login.html"
+      headers:
+        Host: "cloud.oppo.com"
+    client-fingerprint: "chrome"
+
+  - name: "Reality"
+    type: vless
+    server: v2.chuxta.xyz
+    port: 19013
+    uuid: 8affd958-4961-4ab5-d705-4475506b21bd
+    cipher: none
+    udp: true
+    tls: true
+    flow: xtls-rprx-vision
+    servername: www.icloud.com
+    network: tcp
+    reality-opts:
+      public-key: "UK7qxWWGfRQcQfwaGpHnqmmqqJBut4jxve8AeDDJ2UI"
+      short-id: ""
+    client-fingerprint: "chrome"
+
+proxy-groups:
+  - name: "手动选择"
+    type: select
+    proxies:
+      - "负载均衡"
+      - "Vless"
+      - "Reality"
+
+  - name: "负载均衡"
+    type: load-balance
+    strategy: round-robin
+    disable-udp: false
+    proxies:
+      - "Vless"
+      - "Reality"
+
+rules:
+  - GEOIP,LAN,DIRECT
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,手动选择

@@ -1,0 +1,3294 @@
+mixed-port: 7890
+allow-lan: true
+mode: Rule
+log-level: debug
+external-controller: :9090
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  default-nameserver:
+    - 8.8.8.8
+    - 1.1.1.1
+  enhanced-mode: fake-ip
+  nameserver:
+    - tls://8.8.8.8
+    - tls://1.1.1.1
+    - tls://9.9.9.9
+    - tls://1.0.0.1
+    - tls://8.8.4.4
+  fallback:
+    - tls://9.9.9.10
+    - tls://208.67.222.222
+    - tls://185.228.168.168
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+
+proxies:
+- name: "🇩🇪德国IPv6-01"
+  type: vless
+  server: 2606:4700:8de4:2dbc:c77f:f745:b1c6:4f60
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-02"
+  type: vless
+  server: 2606:4700:8d7f:e941:dd5a:cfb3:5829:c4b5
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-03"
+  type: vless
+  server: 2606:4700:8dd8:7cc0:955e:5bbb:b94a:ad82
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-04"
+  type: vless
+  server: 2606:4700:85df:d1c8:a247:8b73:8691:2619
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-05"
+  type: vless
+  server: 2606:4700:8dda:de24:6242:1cf:b962:1279
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-06"
+  type: vless
+  server: 2606:4700:85d5:aeb1:ee95:783f:3667:5e58
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-07"
+  type: vless
+  server: 2606:4700:90ce:1ab2:9d7e:46c9:5142:1c76
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-08"
+  type: vless
+  server: 2606:4700:8d7e:fecf:433e:99c1:6024:f9eb
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-09"
+  type: vless
+  server: 2606:4700:85da:6278:d0c0:83db:db3d:a56e
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-10"
+  type: vless
+  server: 2606:4700:85d8:9cf0:192a:cb10:e2d7:e093
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-11"
+  type: vless
+  server: 2606:4700:8d9d:21f6:f35:76aa:99bd:458a
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-12"
+  type: vless
+  server: 2606:4700:8d98:1fb:330a:385e:c089:f80a
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-13"
+  type: vless
+  server: 2606:4700:9a9d:5027:1407:1e52:1862:734c
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-14"
+  type: vless
+  server: 2606:4700:839c:53d4:1ad0:baa4:6ac3:1251
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-15"
+  type: vless
+  server: 2606:4700:8deb:2828:120:e87c:3756:a119
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-16"
+  type: vless
+  server: 2606:4700:85d4:1a7f:dc8e:fe4e:9def:d80c
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-17"
+  type: vless
+  server: 2606:4700:8dd6:3e71:2a28:e296:609:eac9
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-18"
+  type: vless
+  server: 2606:4700:85de:5b7d:a6ae:1c17:7b90:3c44
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-19"
+  type: vless
+  server: 2606:4700:8d7a:88d5:5b03:e9f6:9d2a:2aa0
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv6-20"
+  type: vless
+  server: 2606:4700:976e:cf9d:63b:b892:abba:3475
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+
+- name: "🇩🇪德国IPv4-01"
+  type: vless
+  server: 104.16.100.172
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-02"
+  type: vless
+  server: 172.67.14.125
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-03"
+  type: vless
+  server: 104.16.110.140
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-04"
+  type: vless
+  server: 172.67.12.190
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-05"
+  type: vless
+  server: 104.16.106.36
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-06"
+  type: vless
+  server: 104.19.236.194
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-07"
+  type: vless
+  server: 104.19.232.48
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-08"
+  type: vless
+  server: 172.67.6.33
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-09"
+  type: vless
+  server: 104.18.127.123
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-10"
+  type: vless
+  server: 172.67.143.171
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-11"
+  type: vless
+  server: 104.16.101.145
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-12"
+  type: vless
+  server: 172.67.140.249
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-13"
+  type: vless
+  server: 172.67.139.85
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-14"
+  type: vless
+  server: 172.67.9.35
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-15"
+  type: vless
+  server: 162.159.160.35
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-16"
+  type: vless
+  server: 104.20.63.157
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-17"
+  type: vless
+  server: 104.16.105.187
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-18"
+  type: vless
+  server: 172.67.142.45
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-19"
+  type: vless
+  server: 104.16.108.223
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇩🇪德国IPv4-20"
+  type: vless
+  server: 104.19.234.230
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+
+- name: "🇸🇪瑞典IPv4-01"
+  type: vless
+  server: 162.159.209.156
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇸🇪瑞典IPv4-02"
+  type: vless
+  server: 162.159.238.43
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+
+- name: "🇭🇰香港IPv6-01"
+  type: vless
+  server: 2606:4700:9769:8309:209e:2e85:c692:c1d0
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-02"
+  type: vless
+  server: 2606:4700:f4:2b7b:1d67:1936:6f7b:e038
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-03"
+  type: vless
+  server: 2606:4700:90d0:2408:2bd:224a:ef12:87f0
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-04"
+  type: vless
+  server: 2606:4700:9a9a:e865:172f:3902:c77f:6aa3
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-05"
+  type: vless
+  server: 2606:4700:91b2:7a9:9239:50c4:bc0e:7b7b
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-06"
+  type: vless
+  server: 2606:4700:9767:826e:e8fd:7132:17d1:75d6
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-07"
+  type: vless
+  server: 2606:4700:9c6a:46f:83f:6fb5:6de1:7ca7
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-08"
+  type: vless
+  server: 2606:4700:9c69:e58c:e5b5:a6c5:9f9b:91d1
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-09"
+  type: vless
+  server: 2606:4700:90c1:f451:d7fc:4cfd:a121:67b7
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-10"
+  type: vless
+  server: 2606:4700:90d2:324b:f380:8feb:6d90:7ca9
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-11"
+  type: vless
+  server: 2606:4700:91b9:509b:867b:ee27:fc67:e4af
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-12"
+  type: vless
+  server: 2606:4700:3032:73bd:d145:823f:f51d:9c01
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-13"
+  type: vless
+  server: 2606:4700:57:f750:b79e:26cf:d8bb:840
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-14"
+  type: vless
+  server: 2606:4700:8ca9:c954:7e1a:b588:10a4:ca34
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-15"
+  type: vless
+  server: 2606:4700:3056:dfb:290f:5fac:7d61:aeae
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-16"
+  type: vless
+  server: 2606:4700:9c66:f42d:a285:a004:3e2a:98e4
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-17"
+  type: vless
+  server: 2606:4700:101:dc1b:787b:dee5:95a2:f2b
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-18"
+  type: vless
+  server: 2606:4700:9643:7760:f415:d12b:bb8b:d6a8
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-19"
+  type: vless
+  server: 2606:4700:90c0:bbbc:6827:553d:87ff:9a1
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv6-20"
+  type: vless
+  server: 2606:4700:3055:8b0a:a825:e7bc:ab29:8f04
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+
+- name: "🇭🇰香港IPv4-01"
+  type: vless
+  server: 104.17.196.201
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-02"
+  type: vless
+  server: 104.18.69.137
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-03"
+  type: vless
+  server: 104.18.232.13
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-04"
+  type: vless
+  server: 104.19.159.97
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-05"
+  type: vless
+  server: 104.17.180.168
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-06"
+  type: vless
+  server: 104.19.223.151
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-07"
+  type: vless
+  server: 104.18.89.95
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-08"
+  type: vless
+  server: 104.17.59.166
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-09"
+  type: vless
+  server: 104.18.155.229
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-10"
+  type: vless
+  server: 104.18.225.146
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-11"
+  type: vless
+  server: 104.17.63.254
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-12"
+  type: vless
+  server: 104.18.227.180
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-13"
+  type: vless
+  server: 104.19.209.206
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-14"
+  type: vless
+  server: 104.18.160.190
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-15"
+  type: vless
+  server: 104.19.146.181
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-16"
+  type: vless
+  server: 104.19.210.231
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-17"
+  type: vless
+  server: 104.16.243.199
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-18"
+  type: vless
+  server: 104.18.146.226
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-19"
+  type: vless
+  server: 104.17.205.213
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇭🇰香港IPv4-20"
+  type: vless
+  server: 104.19.208.107
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+
+- name: "🇯🇵日本IPv4-01"
+  type: vless
+  server: 162.159.137.230
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-02"
+  type: vless
+  server: 162.159.138.28
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-03"
+  type: vless
+  server: 162.159.140.173
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-04"
+  type: vless
+  server: 162.159.143.149
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-05"
+  type: vless
+  server: 162.159.153.59
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-06"
+  type: vless
+  server: 162.159.152.124
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-07"
+  type: vless
+  server: 162.159.141.56
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-08"
+  type: vless
+  server: 162.159.133.92
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-09"
+  type: vless
+  server: 162.159.129.22
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-10"
+  type: vless
+  server: 162.159.136.201
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-11"
+  type: vless
+  server: 162.159.128.138
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-12"
+  type: vless
+  server: 162.159.130.192
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-13"
+  type: vless
+  server: 162.159.134.221
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-14"
+  type: vless
+  server: 162.159.142.40
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇯🇵日本IPv4-15"
+  type: vless
+  server: 162.159.135.230
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+
+- name: "🇺🇸美国IPv6-01"
+  type: vless
+  server: 2606:4700:28:e2c5:d8f7:3a4:20a6:a90c
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-02"
+  type: vless
+  server: 2606:4700:2a:8e9b:3e64:8011:5e12:59fa
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-03"
+  type: vless
+  server: 2606:4700:2b:1255:4937:abfb:6576:6ba
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-04"
+  type: vless
+  server: 2606:4700:2e:5b09:d009:c86e:fe55:7ab2
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-05"
+  type: vless
+  server: 2606:4700:2f:7763:1834:37e9:93e5:b55f
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-06"
+  type: vless
+  server: 2606:4700:25:6a38:107f:75ee:b278:60bb
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-07"
+  type: vless
+  server: 2606:4700:22:29a0:66fe:cabc:5265:5c98
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-08"
+  type: vless
+  server: 2606:4700:29:400a:f33:92c1:ec9e:62b8
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-09"
+  type: vless
+  server: 2606:4700:23:9893:62ac:8783:e336:36c7
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-10"
+  type: vless
+  server: 2606:4700:2d:8072:f514:7f0f:816c:6310
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-11"
+  type: vless
+  server: 2606:4700:20:90d1:f0e1:9d23:3aa2:ef30
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-12"
+  type: vless
+  server: 2606:4700:26:1035:7d22:32c4:abfd:71e2
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-13"
+  type: vless
+  server: 2606:4700:24:e7cb:f355:d5f:aaee:9850
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-14"
+  type: vless
+  server: 2606:4700:2c:94e7:bbf0:a369:5617:6a0
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-15"
+  type: vless
+  server: 2606:4700:27:8f0e:50e9:1b56:e17a:c280
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-16"
+  type: vless
+  server: 2606:4700:10f:6b8:850:dcfd:416c:4212
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-17"
+  type: vless
+  server: 2a06:98c1:3106:c70:fea3:845e:83db:f2d0
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-18"
+  type: vless
+  server: 2606:4700:50:df:6fb0:1f37:d665:49ca
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-19"
+  type: vless
+  server: 2606:4700:5:716d:eecf:7445:7d30:a38f
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv6-20"
+  type: vless
+  server: 2a06:98c1:58:bc50:4a41:5e8f:95bc:94e7
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+
+- name: "🇺🇸美国IPv4-01"
+  type: vless
+  server: 104.17.253.136
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-02"
+  type: vless
+  server: 104.18.4.66
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-03"
+  type: vless
+  server: 104.17.230.187
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-04"
+  type: vless
+  server: 104.21.18.211
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-05"
+  type: vless
+  server: 104.17.248.160
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-06"
+  type: vless
+  server: 172.67.146.64
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-07"
+  type: vless
+  server: 172.67.145.190
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-08"
+  type: vless
+  server: 104.18.27.121
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-09"
+  type: vless
+  server: 172.67.149.161
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-10"
+  type: vless
+  server: 104.17.254.89
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-11"
+  type: vless
+  server: 104.17.232.236
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-12"
+  type: vless
+  server: 104.17.244.58
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-13"
+  type: vless
+  server: 104.17.236.98
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-14"
+  type: vless
+  server: 104.22.62.110
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-15"
+  type: vless
+  server: 104.18.28.160
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-16"
+  type: vless
+  server: 104.26.14.100
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-17"
+  type: vless
+  server: 104.17.225.200
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-18"
+  type: vless
+  server: 104.18.72.229
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-19"
+  type: vless
+  server: 104.18.31.181
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🇺🇸美国IPv4-20"
+  type: vless
+  server: 104.19.168.185
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+
+- name: "🌏伪装域名-01"
+  type: vless
+  server: hugedomains.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-02"
+  type: vless
+  server: zsu.gov.ua
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-03"
+  type: vless
+  server: okcupid.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-04"
+  type: vless
+  server: visakorea.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-05"
+  type: vless
+  server: csgo.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-06"
+  type: vless
+  server: bpminecraft.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-07"
+  type: vless
+  server: whatismyipaddress.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-08"
+  type: vless
+  server: whoer.net
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-09"
+  type: vless
+  server: pages.dev
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-10"
+  type: vless
+  server: ipaddress.my
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-11"
+  type: vless
+  server: yunzhongzhuan.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-12"
+  type: vless
+  server: udacity.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-13"
+  type: vless
+  server: baipiao.eu.org
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-14"
+  type: vless
+  server: shopify.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-15"
+  type: vless
+  server: pcmag.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-16"
+  type: vless
+  server: ipget.net
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-17"
+  type: vless
+  server: ipchicken.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-18"
+  type: vless
+  server: udemy.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-19"
+  type: vless
+  server: digitalocean.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-20"
+  type: vless
+  server: anycast.eu.org
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-21"
+  type: vless
+  server: gov.se
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-22"
+  type: vless
+  server: wto.org
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-23"
+  type: vless
+  server: 4chan.org
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-24"
+  type: vless
+  server: gco.gov.qa
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-25"
+  type: vless
+  server: alejandracaiccedo.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-26"
+  type: vless
+  server: iplocation.net
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-27"
+  type: vless
+  server: iakeys.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-28"
+  type: vless
+  server: who.int
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-29"
+  type: vless
+  server: time.is
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-30"
+  type: vless
+  server: gov.ua
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-31"
+  type: vless
+  server: fbi.gov
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-32"
+  type: vless
+  server: icook.hk
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-33"
+  type: vless
+  server: whatismyip.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-34"
+  type: vless
+  server: ip.sb
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-35"
+  type: vless
+  server: iplocation.io
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-36"
+  type: vless
+  server: visa.com.tw
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-37"
+  type: vless
+  server: icook.tw
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-38"
+  type: vless
+  server: visa.co.jp
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-39"
+  type: vless
+  server: skk.moe
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-40"
+  type: vless
+  server: japan.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-41"
+  type: vless
+  server: russia.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-42"
+  type: vless
+  server: boba88slot.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-43"
+  type: vless
+  server: glassdoor.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-44"
+  type: vless
+  server: cloudflare.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-45"
+  type: vless
+  server: visa.com.hk
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-46"
+  type: vless
+  server: singapore.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-47"
+  type: vless
+  server: visa.com.sg
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-48"
+  type: vless
+  server: visa.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+- name: "🌏伪装域名-49"
+  type: vless
+  server: malaysia.com
+  port: 443
+  uuid: 3fc9eaa5-bc3c-4be0-ac1a-6461c609c572
+  tls: true
+  alpn:
+    - h3
+  tfo: false
+  servername: cm.i-sweet.us.kg
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: cm.i-sweet.us.kg
+
+
+proxy-groups:
+  - name: "🚀节点选择"
+    type: select
+    proxies:
+      - "🤪自动选择"
+      - "🥰负载均衡"
+      - "🇩🇪德国IPv6"
+      - "🇩🇪德国IPv4"
+      - "🇸🇪瑞典IPv4"
+      - "🇭🇰香港IPv6"
+      - "🇭🇰香港IPv4"
+      - "🇯🇵日本IPv4"
+      - "🇺🇸美国IPv6"
+      - "🇺🇸美国IPv4"
+      - "🌏伪装域名"
+
+  - name: "🤪自动选择"
+    type: url-test
+    url: "http://www.gstatic.com/generate_204"
+    interval: 120
+    proxies:
+      - "🇩🇪德国IPv6"
+      - "🇩🇪德国IPv4"
+      - "🇸🇪瑞典IPv4"
+      - "🇭🇰香港IPv6"
+      - "🇭🇰香港IPv4"
+      - "🇯🇵日本IPv4"
+      - "🇺🇸美国IPv6"
+      - "🇺🇸美国IPv4"
+      - "🌏伪装域名"
+  - name: "🥰负载均衡"
+    type: load-balance
+    strategy: round-robin
+    proxies:
+      - "🇩🇪德国IPv6"
+      - "🇩🇪德国IPv4"
+      - "🇸🇪瑞典IPv4"
+      - "🇭🇰香港IPv6"
+      - "🇭🇰香港IPv4"
+      - "🇯🇵日本IPv4"
+      - "🇺🇸美国IPv6"
+      - "🇺🇸美国IPv4"
+      - "🌏伪装域名"
+  - name: "🇩🇪德国IPv6"
+    type: url-test
+    url: "http://www.gstatic.com/generate_204"
+    interval: 120
+    proxies:
+      - "🇩🇪德国IPv6-01"
+      - "🇩🇪德国IPv6-02"
+      - "🇩🇪德国IPv6-03"
+      - "🇩🇪德国IPv6-04"
+      - "🇩🇪德国IPv6-05"
+      - "🇩🇪德国IPv6-06"
+      - "🇩🇪德国IPv6-07"
+      - "🇩🇪德国IPv6-08"
+      - "🇩🇪德国IPv6-09"
+      - "🇩🇪德国IPv6-10"
+      - "🇩🇪德国IPv6-11"
+      - "🇩🇪德国IPv6-12"
+      - "🇩🇪德国IPv6-13"
+      - "🇩🇪德国IPv6-14"
+      - "🇩🇪德国IPv6-15"
+      - "🇩🇪德国IPv6-16"
+      - "🇩🇪德国IPv6-17"
+      - "🇩🇪德国IPv6-18"
+      - "🇩🇪德国IPv6-19"
+      - "🇩🇪德国IPv6-20"
+  - name: "🇩🇪德国IPv4"
+    type: url-test
+    url: "http://www.gstatic.com/generate_204"
+    interval: 120
+    proxies:
+      - "🇩🇪德国IPv4-01"
+      - "🇩🇪德国IPv4-02"
+      - "🇩🇪德国IPv4-03"
+      - "🇩🇪德国IPv4-04"
+      - "🇩🇪德国IPv4-05"
+      - "🇩🇪德国IPv4-06"
+      - "🇩🇪德国IPv4-07"
+      - "🇩🇪德国IPv4-08"
+      - "🇩🇪德国IPv4-09"
+      - "🇩🇪德国IPv4-10"
+      - "🇩🇪德国IPv4-11"
+      - "🇩🇪德国IPv4-12"
+      - "🇩🇪德国IPv4-13"
+      - "🇩🇪德国IPv4-14"
+      - "🇩🇪德国IPv4-15"
+      - "🇩🇪德国IPv4-16"
+      - "🇩🇪德国IPv4-17"
+      - "🇩🇪德国IPv4-18"
+      - "🇩🇪德国IPv4-19"
+      - "🇩🇪德国IPv4-20"
+  - name: "🇸🇪瑞典IPv4"
+    type: url-test
+    url: "http://www.gstatic.com/generate_204"
+    interval: 120
+    proxies:
+      - "🇸🇪瑞典IPv4-01"
+      - "🇸🇪瑞典IPv4-02"
+  - name: "🇭🇰香港IPv6"
+    type: url-test
+    url: "http://www.gstatic.com/generate_204"
+    interval: 120
+    proxies:
+      - "🇭🇰香港IPv6-01"
+      - "🇭🇰香港IPv6-02"
+      - "🇭🇰香港IPv6-03"
+      - "🇭🇰香港IPv6-04"
+      - "🇭🇰香港IPv6-05"
+      - "🇭🇰香港IPv6-06"
+      - "🇭🇰香港IPv6-07"
+      - "🇭🇰香港IPv6-08"
+      - "🇭🇰香港IPv6-09"
+      - "🇭🇰香港IPv6-10"
+      - "🇭🇰香港IPv6-11"
+      - "🇭🇰香港IPv6-12"
+      - "🇭🇰香港IPv6-13"
+      - "🇭🇰香港IPv6-14"
+      - "🇭🇰香港IPv6-15"
+      - "🇭🇰香港IPv6-16"
+      - "🇭🇰香港IPv6-17"
+      - "🇭🇰香港IPv6-18"
+      - "🇭🇰香港IPv6-19"
+      - "🇭🇰香港IPv6-20"
+  - name: "🇭🇰香港IPv4"
+    type: url-test
+    url: "http://www.gstatic.com/generate_204"
+    interval: 120
+    proxies:
+      - "🇭🇰香港IPv4-01"
+      - "🇭🇰香港IPv4-02"
+      - "🇭🇰香港IPv4-03"
+      - "🇭🇰香港IPv4-04"
+      - "🇭🇰香港IPv4-05"
+      - "🇭🇰香港IPv4-06"
+      - "🇭🇰香港IPv4-07"
+      - "🇭🇰香港IPv4-08"
+      - "🇭🇰香港IPv4-09"
+      - "🇭🇰香港IPv4-10"
+      - "🇭🇰香港IPv4-11"
+      - "🇭🇰香港IPv4-12"
+      - "🇭🇰香港IPv4-13"
+      - "🇭🇰香港IPv4-14"
+      - "🇭🇰香港IPv4-15"
+      - "🇭🇰香港IPv4-16"
+      - "🇭🇰香港IPv4-17"
+      - "🇭🇰香港IPv4-18"
+      - "🇭🇰香港IPv4-19"
+      - "🇭🇰香港IPv4-20"
+  - name: "🇯🇵日本IPv4"
+    type: url-test
+    url: "http://www.gstatic.com/generate_204"
+    interval: 120
+    proxies:
+      - "🇯🇵日本IPv4-01"
+      - "🇯🇵日本IPv4-02"
+      - "🇯🇵日本IPv4-03"
+      - "🇯🇵日本IPv4-04"
+      - "🇯🇵日本IPv4-05"
+      - "🇯🇵日本IPv4-06"
+      - "🇯🇵日本IPv4-07"
+      - "🇯🇵日本IPv4-08"
+      - "🇯🇵日本IPv4-09"
+      - "🇯🇵日本IPv4-10"
+      - "🇯🇵日本IPv4-11"
+      - "🇯🇵日本IPv4-12"
+      - "🇯🇵日本IPv4-13"
+      - "🇯🇵日本IPv4-14"
+      - "🇯🇵日本IPv4-15"
+  - name: "🇺🇸美国IPv6"
+    type: url-test
+    url: "http://www.gstatic.com/generate_204"
+    interval: 120
+    proxies:
+      - "🇺🇸美国IPv6-01"
+      - "🇺🇸美国IPv6-02"
+      - "🇺🇸美国IPv6-03"
+      - "🇺🇸美国IPv6-04"
+      - "🇺🇸美国IPv6-05"
+      - "🇺🇸美国IPv6-06"
+      - "🇺🇸美国IPv6-07"
+      - "🇺🇸美国IPv6-08"
+      - "🇺🇸美国IPv6-09"
+      - "🇺🇸美国IPv6-10"
+      - "🇺🇸美国IPv6-11"
+      - "🇺🇸美国IPv6-12"
+      - "🇺🇸美国IPv6-13"
+      - "🇺🇸美国IPv6-14"
+      - "🇺🇸美国IPv6-15"
+      - "🇺🇸美国IPv6-16"
+      - "🇺🇸美国IPv6-17"
+      - "🇺🇸美国IPv6-18"
+      - "🇺🇸美国IPv6-19"
+      - "🇺🇸美国IPv6-20"
+  - name: "🇺🇸美国IPv4"
+    type: url-test
+    url: "http://www.gstatic.com/generate_204"
+    interval: 120
+    proxies:
+      - "🇺🇸美国IPv4-01"
+      - "🇺🇸美国IPv4-02"
+      - "🇺🇸美国IPv4-03"
+      - "🇺🇸美国IPv4-04"
+      - "🇺🇸美国IPv4-05"
+      - "🇺🇸美国IPv4-06"
+      - "🇺🇸美国IPv4-07"
+      - "🇺🇸美国IPv4-08"
+      - "🇺🇸美国IPv4-09"
+      - "🇺🇸美国IPv4-10"
+      - "🇺🇸美国IPv4-11"
+      - "🇺🇸美国IPv4-12"
+      - "🇺🇸美国IPv4-13"
+      - "🇺🇸美国IPv4-14"
+      - "🇺🇸美国IPv4-15"
+      - "🇺🇸美国IPv4-16"
+      - "🇺🇸美国IPv4-17"
+      - "🇺🇸美国IPv4-18"
+      - "🇺🇸美国IPv4-19"
+      - "🇺🇸美国IPv4-20"
+  - name: "🌏伪装域名"
+    type: url-test
+    url: "http://www.gstatic.com/generate_204"
+    interval: 120
+    proxies:
+      - "🌏伪装域名-01"
+      - "🌏伪装域名-02"
+      - "🌏伪装域名-03"
+      - "🌏伪装域名-04"
+      - "🌏伪装域名-05"
+      - "🌏伪装域名-06"
+      - "🌏伪装域名-07"
+      - "🌏伪装域名-08"
+      - "🌏伪装域名-09"
+      - "🌏伪装域名-10"
+      - "🌏伪装域名-11"
+      - "🌏伪装域名-12"
+      - "🌏伪装域名-13"
+      - "🌏伪装域名-14"
+      - "🌏伪装域名-15"
+      - "🌏伪装域名-16"
+      - "🌏伪装域名-17"
+      - "🌏伪装域名-18"
+      - "🌏伪装域名-19"
+      - "🌏伪装域名-20"
+      - "🌏伪装域名-21"
+      - "🌏伪装域名-22"
+      - "🌏伪装域名-23"
+      - "🌏伪装域名-24"
+      - "🌏伪装域名-25"
+      - "🌏伪装域名-26"
+      - "🌏伪装域名-27"
+      - "🌏伪装域名-28"
+      - "🌏伪装域名-29"
+      - "🌏伪装域名-30"
+      - "🌏伪装域名-31"
+      - "🌏伪装域名-32"
+      - "🌏伪装域名-33"
+      - "🌏伪装域名-34"
+      - "🌏伪装域名-35"
+      - "🌏伪装域名-36"
+      - "🌏伪装域名-37"
+      - "🌏伪装域名-38"
+      - "🌏伪装域名-39"
+      - "🌏伪装域名-40"
+      - "🌏伪装域名-41"
+      - "🌏伪装域名-42"
+      - "🌏伪装域名-43"
+      - "🌏伪装域名-44"
+      - "🌏伪装域名-45"
+      - "🌏伪装域名-46"
+      - "🌏伪装域名-47"
+      - "🌏伪装域名-48"
+      - "🌏伪装域名-49"
+
+rules:
+  - GEOIP,LAN,DIRECT
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,🚀节点选择
