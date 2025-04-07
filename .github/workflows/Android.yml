@@ -1,0 +1,111 @@
+name: Build Android Linux CLI (ARM64)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 安装编译工具
+        run: |
+          sudo apt update && sudo apt install -y \
+            wget make autoconf automake libtool build-essential \
+            python3 curl unzip xz-utils file pkg-config
+
+      - name: 配置 Android 交叉编译工具链
+        run: |
+          export NDK_VERSION=r27
+          export NDK_URL=https://dl.google.com/android/repository/android-ndk-$NDK_VERSION-linux.zip
+          wget $NDK_URL && unzip android-ndk-$NDK_VERSION-linux.zip
+          export ANDROID_NDK=$PWD/android-ndk-$NDK_VERSION
+          export TOOLCHAIN=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64
+          export PATH=$TOOLCHAIN/bin:$PATH
+
+          export TARGET=aarch64-linux-android
+          export CC=$TARGET21-clang
+          export CXX=$TARGET21-clang++
+          export AR=$TARGET-ar
+          export AS=$TARGET-as
+          export LD=$TARGET-ld
+          export STRIP=$TARGET-strip
+          echo "export PATH=$PATH" >> $GITHUB_ENV
+          echo "export CC=$CC" >> $GITHUB_ENV
+          echo "export CXX=$CXX" >> $GITHUB_ENV
+          echo "export LD=$LD" >> $GITHUB_ENV
+          echo "export AR=$AR" >> $GITHUB_ENV
+          echo "export AS=$AS" >> $GITHUB_ENV
+          echo "export STRIP=$STRIP" >> $GITHUB_ENV
+
+      - name: 创建 Android 目录结构
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/android-rootfs/{system/bin,system/lib64,system/xbin,system/etc}
+
+      - name: 编译 glibc
+        run: |
+          cd $GITHUB_WORKSPACE
+          wget http://ftp.gnu.org/gnu/libc/glibc-2.39.tar.gz
+          tar -xzf glibc-2.39.tar.gz
+          cd glibc-2.39
+          mkdir build && cd build
+          CFLAGS="-U_FORTIFY_SOURCE -O2" \
+          ../configure --prefix=/system --host=$TARGET \
+                       --disable-werror \
+                       --disable-nscd \
+                       --disable-timezone-tools
+          make -j$(nproc)
+          make install DESTDIR=$GITHUB_WORKSPACE/android-rootfs
+
+      - name: 编译 coreutils
+        run: |
+          cd $GITHUB_WORKSPACE
+          wget http://ftp.gnu.org/gnu/coreutils/coreutils-9.4.tar.gz
+          tar -xzf coreutils-9.4.tar.gz
+          cd coreutils-9.4
+          ./configure --prefix=/system --host=$TARGET
+          make -j$(nproc)
+          make DESTDIR=$GITHUB_WORKSPACE/android-rootfs install
+
+      - name: 编译 bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          wget http://ftp.gnu.org/gnu/bash/bash-5.2.tar.gz
+          tar -xzf bash-5.2.tar.gz
+          cd bash-5.2
+          ./configure --prefix=/system --host=$TARGET
+          make -j$(nproc)
+          make DESTDIR=$GITHUB_WORKSPACE/android-rootfs install
+
+      - name: 编译 sudo
+        run: |
+          cd $GITHUB_WORKSPACE
+          wget https://www.sudo.ws/dist/sudo-1.9.14p3.tar.gz
+          tar -xzf sudo-1.9.14p3.tar.gz
+          cd sudo-1.9.14p3
+          ./configure --prefix=/system --host=$TARGET
+          make -j$(nproc)
+          make DESTDIR=$GITHUB_WORKSPACE/android-rootfs install || true
+
+      - name: 编译 OpenSSH（无 zlib）
+        run: |
+          cd $GITHUB_WORKSPACE
+          wget https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-9.4p1.tar.gz
+          tar -xzf openssh-9.4p1.tar.gz
+          cd openssh-9.4p1
+          ./configure --prefix=/system --host=$TARGET --without-zlib
+          make -j$(nproc)
+          make DESTDIR=$GITHUB_WORKSPACE/android-rootfs install
+
+      - name: 打包 Android Linux 终端
+        run: |
+          cd $GITHUB_WORKSPACE/android-rootfs
+          tar -czf ../android-linux-arm64.tar.gz .
+
+      - name: 上传编译产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-linux-arm64
+          path: android-linux-arm64.tar.gz
