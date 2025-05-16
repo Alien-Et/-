@@ -1,4 +1,4 @@
-name: Build Python for Android (aarch64) - Fixed
+name: Build Python for Android (aarch64) - Final Fix
 
 on:
   push:
@@ -36,7 +36,8 @@ jobs:
             autoconf \
             automake \
             pkg-config \
-            gperf
+            gperf \
+            file
 
       - name: Setup Android NDK (r27b)
         uses: android-actions/setup-android@v2
@@ -59,6 +60,8 @@ jobs:
           echo "CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang" >> $GITHUB_ENV
           echo "CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++" >> $GITHUB_ENV
           echo "ANDROID_API=21" >> $GITHUB_ENV
+          echo "CFLAGS_BASE=--sysroot=$SYSROOT -DANDROID -fPIC" >> $GITHUB_ENV
+          echo "LDFLAGS_BASE=--sysroot=$SYSROOT -fuse-ld=lld -llog" >> $GITHUB_ENV
 
       - name: Download source packages
         run: |
@@ -82,8 +85,8 @@ jobs:
             CC="$CC" \
             AR="$AR" \
             RANLIB="$RANLIB" \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID -fPIC" \
-            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
+            CFLAGS="$CFLAGS_BASE" \
+            LDFLAGS="$LDFLAGS_BASE"
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ..
 
@@ -98,8 +101,8 @@ jobs:
             CC="$CC" \
             AR="$AR" \
             RANLIB="$RANLIB" \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID -fPIC" \
-            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
+            CFLAGS="$CFLAGS_BASE" \
+            LDFLAGS="$LDFLAGS_BASE"
           make -j$(nproc)
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           echo "LZMA_H_PATH=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
@@ -126,12 +129,11 @@ jobs:
             CC="$CC" \
             AR="$AR" \
             RANLIB="$RANLIB" \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID -fPIC" \
-            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
+            CFLAGS="$CFLAGS_BASE" \
+            LDFLAGS="$LDFLAGS_BASE"
           make -j$(nproc)
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           
-          # Ensure libraries are in correct location
           mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/lib
           cp -f $GITHUB_WORKSPACE/android-vroot/data/python/lib*/libncurses.* $GITHUB_WORKSPACE/android-vroot/data/python/lib/ || true
           
@@ -139,42 +141,56 @@ jobs:
           echo "READLINE_LIB=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
           cd ..
 
-      - name: Build readline (fixed)
+      - name: Build readline (Fixed with manual config)
         run: |
           cd readline-8.2
           
-          # Create test program to verify toolchain
-          cat <<EOF > simple_test.c
+          # Create test program
+          cat <<EOF > cross_test.c
+          #include <stdio.h>
           #include <android/log.h>
           int main() {
-            __android_log_print(ANDROID_LOG_INFO, "READLINE", "Cross-compile test");
-            return 0;
+              printf("Cross-compile test running\n");
+              __android_log_print(ANDROID_LOG_INFO, "READLINE", "Test passed");
+              return 0;
           }
           EOF
           
-          # Required Android libraries
-          EXTRA_LIBS="-lc -lm -ldl -llog"
+          # Verify toolchain works
+          echo "验证工具链..."
+          $CC $CFLAGS_BASE $LDFLAGS_BASE -o cross_test cross_test.c
+          file cross_test
+          strings cross_test | grep -i "android" || true
           
-          # First test the compiler
-          echo "Testing cross compiler..."
-          $CC --sysroot=$SYSROOT -DANDROID -fPIC \
-            -o simple_test simple_test.c $EXTRA_LIBS
-          file simple_test || true
+          # Bypass configure checks
+          cat <<EOF > config.cache
+          ac_cv_func_sigsetjmp=yes
+          ac_cv_func_posix_setjmp=yes
+          ac_cv_func_malloc_0_nonnull=yes
+          ac_cv_func_realloc_0_nonnull=yes
+          bash_cv_wcwidth_broken=no
+          ac_cv_prog_cc_works=yes
+          ac_cv_prog_cc_cross=yes
+          EOF
           
-          # Then configure with proper flags
+          # Run configure with forced settings
           ./configure \
             --host=aarch64-linux-android \
             --prefix=/data/python \
             --disable-shared \
             --enable-static \
-            bash_cv_wcwidth_broken=no \
+            --cache-file=config.cache \
             CC="$CC" \
             AR="$AR" \
             RANLIB="$RANLIB" \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID -fPIC -I$GITHUB_WORKSPACE/android-vroot/data/python/include" \
-            LDFLAGS="--sysroot=$SYSROOT -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lncurses $EXTRA_LIBS -fuse-ld=lld"
+            CFLAGS="$CFLAGS_BASE -I$READLINE_INCLUDE" \
+            LDFLAGS="$LDFLAGS_BASE -L$READLINE_LIB -lncurses" \
+            || { echo "configure 可能报错但继续构建..."; }
           
-          make -j$(nproc)
+          # Force correct linking
+          sed -i 's/^LIBS=.*/LIBS=-lncurses -lc -lm -ldl -llog/' Makefile
+          
+          make -j$(nproc) || { echo "make 失败，查看错误..."; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ..
 
@@ -199,16 +215,16 @@ jobs:
             AR="$AR" \
             RANLIB="$RANLIB" \
             READELF="$READELF" \
-            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID -fPIC" \
-            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses -lc -lm -ldl -llog --sysroot=$SYSROOT -fuse-ld=lld"
+            CFLAGS="$CFLAGS_BASE -I$LZMA_H_PATH -I$READLINE_INCLUDE" \
+            LDFLAGS="$LDFLAGS_BASE -L$LZMA_LIB_PATH -L$READLINE_LIB -llzma -lreadline -lncurses"
           
           make -j$(nproc)
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ..
 
-      - name: Fix shebangs and symlinks
+      - name: Fix installation
         run: |
-          # Fix Python shebangs
+          # Fix shebangs
           find $GITHUB_WORKSPACE/android-vroot/data/python/bin -type f -exec grep -l '^#!' {} \; | while read -r file; do
             sed -i "1s|.*|#!/data/python/bin/python3|" "$file"
           done
@@ -225,10 +241,9 @@ jobs:
             fi
           done
           
-          # Make scripts executable
-          find $GITHUB_WORKSPACE/android-vroot/data/python/bin -type f -exec chmod 755 {} \;
+          chmod -R 755 $GITHUB_WORKSPACE/android-vroot/data/python/bin
 
-      - name: Create deployment package
+      - name: Package Python
         run: |
           tar -czvf python-3.12.8-android-arm64.tar.gz \
             --transform 's|^android-vroot/||' \
@@ -245,3 +260,24 @@ jobs:
             cpython/config.log
             ncurses-6.5/config.log
             readline-8.2/config.log
+            readline-8.2/Makefile
+
+      - name: Debug if failed
+        if: failure()
+        run: |
+          echo "=== 详细诊断 ==="
+          echo "1. 工具链验证:"
+          $CC --version
+          $CC -v 2>&1 | grep "Target:"
+          
+          echo "2. readline 构建目录内容:"
+          ls -la readline-8.2/
+          
+          echo "3. 关键对象文件检查:"
+          file readline-8.2/*.o || true
+          
+          echo "4. 链接器测试:"
+          echo 'void main(){}' > test.c
+          $CC $CFLAGS_BASE $LDFLAGS_BASE -v test.c 2>&1 | grep "LIBRARY_PATH"
+          
+          exit 1
