@@ -90,6 +90,13 @@ jobs:
           tar -xf Python-3.12.8.tar.xz
           mv Python-3.12.8 cpython
 
+      - name: 修改 setup.py 禁用 grp 模块
+        run: |
+          cd cpython
+          sed -i '/exts.append.*grpmodule/s/^/#/' setup.py
+          echo "验证 setup.py 修改"
+          grep -C 2 "grpmodule" setup.py
+
       - name: 下载 zlib 源码
         run: |
           wget https://zlib.net/zlib-1.3.1.tar.gz
@@ -258,6 +265,7 @@ jobs:
           ac_cv_func_getpwent=no
           ac_cv_func_setpwent=no
           ac_cv_func_endpwent=no
+          ac_cv_header_grp_h=no
           EOF
           echo "验证 CONFIG_SITE 内容"
           cat $CONFIG_SITE
@@ -288,9 +296,9 @@ jobs:
             --prefix=/data/python \
             CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID" \
             LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncursesw -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld" \
-            2>&1 | tee configure.log || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
+            2>&1 | tee configure.log || { echo "configure 失败"; cat configure.log; tail -n 100 config.log; exit 1; }
           echo "检查 configure 日志中 grp 和 pwd 相关配置"
-          grep -E "checking for.*(getgrent|setgrent|endgrent|getpwent|setpwent|endpwent)" configure.log || echo "无相关配置日志"
+          grep -E "checking for.*(getgrent|setgrent|endgrent|getpwent|setpwent|endpwent|grp\.h)" configure.log || echo "无相关配置日志"
 
       - name: 上传 config.log（如果配置失败）
         if: failure()
