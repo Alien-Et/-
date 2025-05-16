@@ -86,34 +86,9 @@ jobs:
 
       - name: 下载 Python 3.12.8 源码
         run: |
-          echo "下载 Python 3.12.8 源码"
-          wget --tries=3 --timeout=30 https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz -O Python-3.12.8.tar.xz
-          echo "验证下载文件"
-          if [ -f "Python-3.12.8.tar.xz" ]; then
-            echo "文件存在，检查完整性"
-            echo "d66e6b4f4d9e20754c9a9fd98f2e40fb0000a3a3d8f0f1cc188896a8c2a1a47b  Python-3.12.8.tar.xz" | sha256sum -c -
-          else
-            echo "错误: 下载失败，Python-3.12.8.tar.xz 不存在"
-            exit 1
-          fi
-          echo "解压源码"
+          wget https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz
           tar -xf Python-3.12.8.tar.xz
-          if [ -d "Python-3.12.8" ]; then
-            echo "Python-3.12.8 目录存在"
-            mv Python-3.12.8 cpython
-          else
-            echo "错误: 解压失败，Python-3.12.8 目录不存在"
-            exit 1
-          fi
-          echo "验证 cpython 目录"
-          ls -l cpython
-          if [ -f "cpython/setup.py" ]; then
-            echo "setup.py 存在"
-          else
-            echo "错误: setup.py 不存在"
-            ls -l cpython
-            exit 1
-          fi
+          mv Python-3.12.8 cpython
 
       - name: 下载 zlib 源码
         run: |
@@ -273,8 +248,6 @@ jobs:
       - name: 为 Android 配置 Python
         run: |
           cd cpython
-          echo "清理旧配置"
-          make distclean || true
           export CONFIG_SITE=config.site
           cat <<EOF > $CONFIG_SITE
           ac_cv_file__dev_ptmx=yes
@@ -285,8 +258,6 @@ jobs:
           ac_cv_func_getpwent=no
           ac_cv_func_setpwent=no
           ac_cv_func_endpwent=no
-          ac_cv_header_grp_h=no
-          ac_cv_header_pwd_h=no
           EOF
           echo "验证 CONFIG_SITE 内容"
           cat $CONFIG_SITE
@@ -317,9 +288,9 @@ jobs:
             --prefix=/data/python \
             CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID" \
             LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncursesw -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld" \
-            2>&1 | tee configure.log || { echo "configure 失败"; cat configure.log; tail -n 100 config.log; exit 1; }
+            2>&1 | tee configure.log || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
           echo "检查 configure 日志中 grp 和 pwd 相关配置"
-          grep -E "checking for.*(getgrent|setgrent|endgrent|getpwent|setpwent|endpwent|grp\.h|pwd\.h)" configure.log || echo "无相关配置日志"
+          grep -E "checking for.*(getgrent|setgrent|endgrent|getpwent|setpwent|endpwent)" configure.log || echo "无相关配置日志"
 
       - name: 上传 config.log（如果配置失败）
         if: failure()
