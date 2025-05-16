@@ -112,6 +112,26 @@ jobs:
           echo "LZMA_H_PATH=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
           echo "LZMA_LIB_PATH=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
 
+      - name: 下载并交叉编译 readline
+        run: |
+          wget https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz
+          tar -xzf readline-8.2.tar.gz
+          cd readline-8.2
+          export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+          export AR=$AR
+          export RANLIB=$RANLIB
+          ./configure \
+            --host=aarch64-linux-android \
+            --prefix=/data/python \
+            --disable-shared \
+            --enable-static \
+            bash_cv_wcwidth_broken=no
+          make -j$(nproc)
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          cd ..
+          echo "READLINE_INCLUDE=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
+          echo "READLINE_LIB=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
+
       - name: 构建 zlib
         run: |
           cd zlib-1.3.1
@@ -144,8 +164,8 @@ jobs:
             RANLIB=$RANLIB \
             READELF=$READELF \
             --prefix=/data/python \
-            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include" \
-            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma"
+            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE}" \
+            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses"
 
       - name: 构建 Python
         run: |
@@ -158,6 +178,8 @@ jobs:
           cd cpython
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ../zlib-1.3.1
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          cd ../readline-8.2
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           if [ "${{ env.USE_NDK_LZMA }}" == "false" ]; then
             cd ../xz-5.6.2
@@ -199,3 +221,4 @@ jobs:
             Python-3.12.8.tar.xz
             zlib-1.3.1.tar.gz
             xz-5.6.2.tar.gz
+            readline-8.2.tar.gz
