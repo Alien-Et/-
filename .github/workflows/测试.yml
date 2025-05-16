@@ -267,17 +267,26 @@ jobs:
           export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
           # 清理可能冲突的环境变量
           unset CFLAGS LDFLAGS CPPFLAGS CXXFLAGS LD_LIBRARY_PATH PERL5LIB
-          # 验证工具链和依赖
+          # 验证环境变量
           echo "验证环境变量"
           echo "CC=$CC"
           echo "PATH=$PATH"
           echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
           echo "SYSROOT=$SYSROOT"
+          echo "CPPFLAGS=$CPPFLAGS"
           $CC --version || { echo "编译器不可用"; exit 1; }
+          $CC -v > clang_verbose.log 2>&1
+          # 检查 sysroot 是否包含不兼容宏
+          grep -r "_DARWIN_C_SOURCE" $SYSROOT || echo "sysroot 中未找到 _DARWIN_C_SOURCE"
+          # 验证 zlib 依赖
           echo "检查 zlib 依赖"
           ls -l $ZLIB_INCLUDE/zlib.h || { echo "zlib.h 未找到"; exit 1; }
           ls -l $ZLIB_LIB/libz.a || { echo "libz.a 未找到"; exit 1; }
-          # 使用超时控制 Configure
+          # 测试 zlib 链接
+          echo "#include <zlib.h>" > test_zlib.c
+          echo "int main() { zlibVersion(); return 0; }" >> test_zlib.c
+          $CC -I$ZLIB_INCLUDE -L$ZLIB_LIB -lz -o test_zlib test_zlib.c > test_zlib.log 2>&1 || { echo "zlib 链接测试失败"; cat test_zlib.log; exit 1; }
+          # 使用超时控制和调试模式
           timeout 300 ./Configure \
             android-arm64 \
             -D__ANDROID_API__=21 \
@@ -287,9 +296,13 @@ jobs:
             --openssldir=/data/python/ssl \
             --with-zlib-include=$ZLIB_INCLUDE \
             --with-zlib-lib=$ZLIB_LIB \
-            > configure.log 2>&1 || { echo "Configure 失败"; cat configure.log; exit 1; }
+            --sysroot=$SYSROOT \
+            -d > configure.log 2>&1 || { echo "Configure 失败"; cat configure.log; exit 1; }
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
+          # 验证 OpenSSL 安装
+          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libssl.a || { echo "libssl.a 未找到"; exit 1; }
+          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libcrypto.a || { echo "libcrypto.a 未找到"; exit 1; }
           cd ..
 
       - name: 下载并交叉编译 SQLite
@@ -566,6 +579,8 @@ jobs:
             openssl-3.3.2/configure.log
             openssl-3.3.2/make.log
             openssl-3.3.2/install.log
+            openssl-3.3.2/clang_verbose.log
+            openssl-3.3.2/test_zlib.log
             sqlite-autoconf-3460000/config.log
             sqlite-autoconf-3460000/make.log
             sqlite-autoconf-3460000/install.log
