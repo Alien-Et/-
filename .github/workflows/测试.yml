@@ -133,6 +133,7 @@ jobs:
             --prefix=/data/python \
             --disable-shared \
             --enable-static \
+            --enable-widec \
             --without-cxx \
             --without-cxx-binding \
             --without-ada \
@@ -151,26 +152,26 @@ jobs:
           echo "运行 make"
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
           echo "检查生成的库"
-          find . -name "libncurses.a"
+          find . -name "libncursesw.a"
           echo "运行 make install"
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
           echo "检查安装的 ncurses 库"
-          find $GITHUB_WORKSPACE/android-vroot -name "libncurses.a"
+          find $GITHUB_WORKSPACE/android-vroot -name "libncursesw.a"
           mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/lib
           for path in \
-            "$GITHUB_WORKSPACE/android-vroot/usr/lib/libncurses.a" \
-            "$GITHUB_WORKSPACE/android-vroot/data/python/lib64/libncurses.a" \
-            "$GITHUB_WORKSPACE/android-vroot/lib/libncurses.a"; do
+            "$GITHUB_WORKSPACE/android-vroot/usr/lib/libncursesw.a" \
+            "$GITHUB_WORKSPACE/android-vroot/data/python/lib64/libncursesw.a" \
+            "$GITHUB_WORKSPACE/android-vroot/lib/libncursesw.a"; do
             if [ -f "$path" ]; then
-              echo "移动 libncurses.a 从 $path 到正确路径"
+              echo "移动 libncursesw.a 从 $path 到正确路径"
               mv "$path" $GITHUB_WORKSPACE/android-vroot/data/python/lib/
             fi
           done
-          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libncurses.a" ]; then
-            echo "libncurses.a 安装成功"
-            ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncurses.a
+          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a" ]; then
+            echo "libncursesw.a 安装成功"
+            ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a
           else
-            echo "错误: libncurses.a 未找到"
+            echo "错误: libncursesw.a 未找到"
             echo "检查所有可能的库路径"
             find $GITHUB_WORKSPACE/android-vroot -name "*.a"
             exit 1
@@ -193,7 +194,7 @@ jobs:
             --enable-static \
             bash_cv_wcwidth_broken=no \
             CFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include --sysroot=$SYSROOT -DANDROID" \
-            LDFLAGS="-L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lncurses --sysroot=$SYSROOT -fuse-ld=lld"
+            LDFLAGS="-L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lncursesw --sysroot=$SYSROOT -fuse-ld=lld"
           make -j$(nproc) || { echo "make 失败"; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ..
@@ -242,7 +243,7 @@ jobs:
           echo "检查 zlib"
           ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libz.a
           echo "检查 ncurses"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncurses.a
+          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a
 
       - name: 为 Android 配置 Python
         run: |
@@ -263,7 +264,7 @@ jobs:
             exit 1
           fi
           echo "检查 ncurses 库"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncurses.a
+          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a
           ./configure \
             --host=aarch64-linux-android \
             --build=x86_64-linux-gnu \
@@ -277,7 +278,7 @@ jobs:
             READELF=$READELF \
             --prefix=/data/python \
             CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID" \
-            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld" \
+            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncursesw -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld" \
             > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
 
       - name: 上传 config.log（如果配置失败）
@@ -287,6 +288,7 @@ jobs:
           name: config-log
           path: |
             cpython/config.log
+            cpython/configure.log
             ncurses-6.5/config.log
             ncurses-6.5/configure.log
             ncurses-6.5/make.log
@@ -313,7 +315,7 @@ jobs:
             make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           fi
           echo "验证 ncurses 安装"
-          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libncurses.a" ]; then
+          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a" ]; then
             echo "ncurses 库安装成功"
           else
             echo "错误: ncurses 库未找到"
