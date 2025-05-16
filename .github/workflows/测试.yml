@@ -101,16 +101,18 @@ jobs:
           wget https://tukaani.org/xz/xz-5.6.2.tar.gz
           tar -xzf xz-5.6.2.tar.gz
           cd xz-5.6.2
+          export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+          export AR=$AR
+          export RANLIB=$RANLIB
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
           ./configure \
             --host=aarch64-linux-android \
             --prefix=/data/python \
-            CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
-            CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ \
-            AR=$AR \
-            RANLIB=$RANLIB \
             --disable-shared \
-            --enable-static
-          make -j$(nproc)
+            --enable-static \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
+          make -j$(nproc) || { echo "make 失败"; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ..
           echo "LZMA_H_PATH=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
@@ -124,6 +126,7 @@ jobs:
           export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
           export AR=$AR
           export RANLIB=$RANLIB
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
           ./configure \
             --host=aarch64-linux-android \
             --prefix=/data/python \
@@ -134,9 +137,24 @@ jobs:
             --without-ada \
             --without-manpages \
             --without-progs \
-            --without-tests
-          make -j$(nproc)
+            --without-tests \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
+          make -j$(nproc) || { echo "make 失败"; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          echo "检查安装的 ncurses 库"
+          find $GITHUB_WORKSPACE/android-vroot -name "libncurses.a"
+          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/lib
+          if [ -f "$GITHUB_WORKSPACE/android-vroot/usr/lib/libncurses.a" ]; then
+            echo "移动 libncurses.a 到正确路径"
+            mv $GITHUB_WORKSPACE/android-vroot/usr/lib/libncurses.a $GITHUB_WORKSPACE/android-vroot/data/python/lib/
+          fi
+          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libncurses.a" ]; then
+            echo "libncurses.a 安装成功"
+          else
+            echo "错误: libncurses.a 未找到"
+            exit 1
+          fi
           cd ..
 
       - name: 下载并交叉编译 readline
@@ -147,15 +165,16 @@ jobs:
           export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
           export AR=$AR
           export RANLIB=$RANLIB
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
           ./configure \
             --host=aarch64-linux-android \
             --prefix=/data/python \
             --disable-shared \
             --enable-static \
             bash_cv_wcwidth_broken=no \
-            CFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include" \
-            LDFLAGS="-L$GITHUB_WORKSPACE/android-vroot/data/python/lib"
-          make -j$(nproc)
+            CFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include --sysroot=$SYSROOT -DANDROID" \
+            LDFLAGS="-L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lncurses --sysroot=$SYSROOT -fuse-ld=lld"
+          make -j$(nproc) || { echo "make 失败"; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ..
           echo "READLINE_INCLUDE=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
@@ -167,10 +186,13 @@ jobs:
           export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
           export AR=$AR
           export RANLIB=$RANLIB
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchainsllvm/prebuilt/linux-x86_64/sysroot
           ./configure \
             --prefix=/data/python \
-            --static
-          make -j$(nproc)
+            --static \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
+          make -j$(nproc) || { echo "make 失败"; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
 
       - name: 测试交叉编译器
@@ -249,7 +271,7 @@ jobs:
 
       - name: 创建虚拟 Android 文件系统
         run: |
-          mkdir -p $GITHUB_WORKSPACE/android-vroot/data
+          mkdir -p $GITHUB_WORKSPACE/andriod-vroot/data
           cd cpython
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ../zlib-1.3.1
@@ -261,6 +283,13 @@ jobs:
           if [ "${{ env.USE_NDK_LZMA }}" == "false" ]; then
             cd ../xz-5.6.2
             make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          fi
+          echo "验证 ncurses 安装"
+          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libncurses.a" ]; then
+            echo "ncurses 库安装成功"
+          else
+            echo "错误: ncurses 库未找到"
+            exit 1
           fi
 
       - name: 修复路径和权限
