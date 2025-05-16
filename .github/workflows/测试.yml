@@ -50,7 +50,7 @@ jobs:
 
       - name: 验证 NDK 安装
         run: |
-          echo "Android NDK 根目录: $ANDROID_NDK_ROOT"
+          echo "Android NDK 根目录: $ANDROIDorrido_NDK_ROOT"
           ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/
           echo "检查 sysroot"
           ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/
@@ -104,8 +104,13 @@ jobs:
           export AR=$AR
           export RANLIB=$RANLIB
           export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
-          make -f Makefile-libbz2_so CFLAGS="--sysroot=$SYSROOT -DANDROID" LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld" > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
-          make install PREFIX=$GITHUB_WORKSPACE/android-vroot/data/python > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
+          export CFLAGS="--sysroot=$SYSROOT -DANDROID -D__ANDROID_API__=21"
+          export LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
+          make libbz2.a > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
+          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/include
+          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/lib
+          cp bzlib.h $GITHUB_WORKSPACE/android-vroot/data/python/include/
+          cp libbz2.a $GITHUB_WORKSPACE/android-vroot/data/python/lib/
           cd ..
 
       - name: 下载并交叉编译 libffi
@@ -122,7 +127,7 @@ jobs:
             --prefix=/data/python \
             --disable-shared \
             --enable-static \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID -D__ANDROID_API__=21" \
             LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
@@ -142,7 +147,7 @@ jobs:
             --prefix=/data/python \
             --disable-shared \
             --enable-static \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID -D__ANDROID_API__=21" \
             LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
@@ -175,7 +180,7 @@ jobs:
             --with-ticlib=no \
             --with-termlib=no \
             --with-termcap \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID -D__ANDROID_API__=21" \
             LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld" \
             > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; exit 1; }
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
@@ -214,7 +219,7 @@ jobs:
             --disable-shared \
             --enable-static \
             bash_cv_wcwidth_broken=no \
-            CFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include --sysroot=$SYSROOT -DANDROID" \
+            CFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include --sysroot=$SYSROOT -DANDROID -D__ANDROID_API__=21" \
             LDFLAGS="-L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lncursesw --sysroot=$SYSROOT -fuse-ld=lld"
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
@@ -239,7 +244,7 @@ jobs:
             no-tests \
             --with-zlib-lib=$GITHUB_WORKSPACE/android-vroot/data/python/lib \
             --with-zlib-include=$GITHUB_WORKSPACE/android-vroot/data/python/include \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID -D__ANDROID_API__=21" \
             LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
@@ -248,7 +253,7 @@ jobs:
       - name: 下载并交叉编译 SQLite
         run: |
           wget https://www.sqlite.org/2024/sqlite-autoconf-3460000.tar.gz
-          tar -xzf sqlite-autoconf-3460000.tar.gz
+          tar -xzf sqlite-autorf-3460000.tar.gz
           cd sqlite-autoconf-3460000
           export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
           export AR=$AR
@@ -259,7 +264,7 @@ jobs:
             --prefix=/data/python \
             --disable-shared \
             --enable-static \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID -D__ANDROID_API__=21" \
             LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
@@ -272,7 +277,7 @@ jobs:
           export AR=$AR
           export RANLIB=$RANLIB
           export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
-          export CFLAGS="--sysroot=$SYSROOT -DANDROID"
+          export CFLAGS="--sysroot=$SYSROOT -DANDROID -D__ANDROID_API__=21"
           export LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
           ./configure \
             --prefix=/data/python \
@@ -377,7 +382,7 @@ jobs:
             RANLIB=$RANLIB \
             READELF=$READELF \
             --prefix=/data/python \
-            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID" \
+            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID -D__ANDROID_API__=21" \
             LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -lreadline -lncursesw -lbz2 -lffi -lssl -lcrypto -lsqlite3 -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld" \
             2>&1 | tee configure.log || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
           echo "检查 configure 日志中 grp 和 pwd 相关配置"
@@ -419,13 +424,16 @@ jobs:
           cd zlib-1.3.1
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "zlib make install 失败"; cat install.log; exit 1; }
           cd ../bzip2-1.0.8
-          make install PREFIX=$GITHUB_WORKSPACE/android-vroot/data/python > install.log 2>&1 || { echo "bzip2 make install 失败"; cat install.log; exit 1; }
+          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/include
+          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/lib
+          cp bzlib.h $GITHUB_WORKSPACE/android-vroot/data/python/include/
+          cp libbz2.a $GITHUB_WORKSPACE/android-vroot/data/python/lib/
           cd ../libffi-3.4.6
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "libffi make install 失败"; cat install.log; exit 1; }
           cd ../xz-5.6.2
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "xz make install 失败"; cat install.log; exit 1; }
           cd ../ncurses-6.5
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "ncurses make install 失败"; cat install.log; exit 1; }
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "ncurses make install 失败"; cat installक्र.log; exit 1; }
           cd ../readline-8.2
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "readline make install 失败"; cat install.log; exit 1; }
           cd ../openssl-3.3.2
