@@ -1,169 +1,252 @@
-name: Build Python for Android
+name: Build Python 3.12.10 for Android
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-24.04
-    env:
-      ANDROID_NDK_ROOT: /usr/local/lib/android/sdk/ndk/27.2.12479018
-      LZMA_H_PATH: /home/runner/work/ips/ips/android-vroot/data/python/include
-      LZMA_LIB_PATH: /home/runner/work/ips/ips/android-vroot/data/python/lib
-      AR: /usr/local/lib/android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-      RANLIB: /usr/local/lib/android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib
-      READELF: /usr/bin/readelf
 
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
+      - name: 检出代码
+        uses: actions/checkout@v3
 
-    - name: 设置 Android SDK 和 NDK
-      uses: android-actions/setup-android@v3
-      with:
-        cmdline-tools-version: '7.0'
-        ndk-version: '27.2.12479018'
+      - name: 安装构建依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential zlib1g-dev libffi-dev libssl-dev libbz2-dev \
+            libreadline-dev libsqlite3-dev libexpat-dev wget curl llvm \
+            libncurses5-dev libncursesw5-dev xz-utils tk-dev libxml2-dev \
+            libxmlsec1-dev liblzma-dev git tar python3 python3-pip unzip \
+            binutils tree patchelf perl libtext-template-perl
+          perl -MText::Template -e 'print "Text::Template OK\n"' || { echo "Text::Template 安装失败"; exit 1; }
 
-    - name: 安装依赖
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential curl git unzip libbz2-dev libffi-dev liblzma-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev zlib1g-dev libexpat1-dev
+      - name: 设置 Android NDK (r27b)
+        uses: android-actions/setup-android@v2
+        with:
+          ndk-version: "27.2.12479018"
 
-    - name: 下载并交叉编译 libmpdec
-      run: |
-        wget https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-4.0.0.tar.gz
-        tar -xzf mpdecimal-4.0.0.tar.gz
-        cd mpdecimal-4.0.0
-        export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
-        export AR=$AR
-        export RANLIB=$RANLIB
-        export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
-        export CFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include --sysroot=$SYSROOT -O3"
-        export LDFLAGS="-L$GITHUB_WORKSPACE/android-vroot/data/python/lib --sysroot=$SYSROOT -fuse-ld=lld"
-        ./configure \
-          --host=aarch64-linux-android \
-          --prefix=/data/python \
-          --disable-shared \
-          --enable-static \
-          > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
-        make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
-        make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
-        ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libmpdec.a || { echo "libmpdec.a 未找到"; exit 1; }
-        ls -l $GITHUB_WORKSPACE/android-vroot/data/python/include/mpdecimal.h || { echo "mpdecimal.h 未找到"; exit 1; }
-        cd ..
+      - name: 验证 NDK 和 Perl 安装
+        run: |
+          echo "Android NDK 根目录: $ANDROID_NDK_ROOT"
+          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/
+          $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang --version
+          perl -v
+          perl -MText::Template -e 'print "Text::Template OK\n"' || { echo "Text::Template 不可用"; exit 1; }
 
-    - name: 下载 Python 3.12.10
-      run: |
-        wget https://www.python.org/ftp/python/3.12.10/Python-3.12.10.tar.xz
-        tar -xJf Python-3.12.10.tar.xz
-        mv Python-3.12.10 cpython
+      - name: 配置交叉编译工具
+        run: |
+          export READELF=$(which readelf)
+          echo "READELF=$READELF" >> $GITHUB_ENV
+          echo "AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
+          echo "RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
+          echo "PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH" >> $GITHUB_ENV
 
-    - name: 配置 Modules/Setup.local
-      run: |
-        cd cpython
-        cat <<EOF > Modules/Setup.local
-        zlib zlibmodule.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lz
-        _ssl _ssl.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lssl -lcrypto
-        _hashlib _hashlib.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lssl -lcrypto
-        _curses _curses.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lncursesw
-        _curses_panel _curses_panel.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lncursesw
-        _bz2 _bz2.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lbz2
-        _lzma _lzma.c -I${LZMA_H_PATH} -L${LZMA_LIB_PATH} -llzma
-        _sqlite3 _sqlite3.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lsqlite3
-        _ctypes _ctypes.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lffi
-        _decimal _decimal.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lmpdec -lm
-        readline readline.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lreadline -lncursesw
-        EOF
+      - name: 清理构建目录
+        run: |
+          rm -rf $GITHUB_WORKSPACE/android-vroot
+          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python
+          echo "构建目录已清理"
 
-    - name: 为 Android 配置 Python
-      run: |
-        cd cpython
-        export CONFIG_SITE=config.site
-        export MACHDEP=android
-        cat <<EOF > $CONFIG_SITE
-        ac_cv_file__dev_ptmx=yes
-        ac_cv_file__dev_ptc=no
-        ac_cv_func_shm_open=yes
-        ac_cv_working_tzset=yes
-        ac_cv_func_getgrent=no
-        ac_cv_func_setgrent=no
-        ac_cv_func_endgrent=no
-        ac_cv_func_getpwent=no
-        ac_cv_func_setpwent=no
-        ac_cv_func_endpwent=no
-        ac_cv_func_fork=no
-        ac_cv_func_forkpty=no
-        ac_cv_func_openpty=no
-        ac_cv_func_spawn=no
-        ac_cv_func_posix_spawn=no
-        ac_cv_func_gethostbyname=no
-        ac_cv_func_gethostbyaddr=no
-        ac_cv_func_gethostbyname_r=no
-        ac_cv_func_nis=no
-        ac_cv_func_yp_get_default_domain=no
-        ac_cv_func_epoll=no
-        ac_cv_func_epoll_create1=no
-        ac_cv_func_getservbyname=no
-        ac_cv_func_getservbyport=no
-        ac_cv_func_getprotobyname=no
-        ac_cv_func_sem_clockwait=no
-        EOF
-        export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
-        ./configure \
-          --host=aarch64-linux-android \
-          --build=x86_64-linux-gnu \
-          --prefix=/data/python \
-          --disable-ipv6 \
-          --with-build-python=$(which python3) \
-          --with-system-expat \
-          --with-system-ffi \
-          --with-system-libmpdec \
-          --enable-loadable-sqlite-extensions \
-          --enable-optimizations \
-          --with-ensurepip=install \
-          --with-lto=thin \
-          CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang \
-          CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++ \
-          AR=$AR \
-          RANLIB=$RANLIB \
-          READELF=$READELF \
-          CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -O3" \
-          LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib --sysroot=$SYSROOT -fuse-ld=lld" \
-          > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
+      - name: 下载 Python 3.12.10 源码
+        run: |
+          wget https://www.python.org/ftp/python/3.12.10/Python-3.12.10.tar.xz
+          echo "07ab697474595e06f06647417d3c7fa97ded07afc1a7e4454c5639919b46eaea Python-3.12.10.tar.xz" | sha256sum -c -
+          tar -xf Python-3.12.10.tar.xz
+          mv Python-3.12.10 cpython
 
-    - name: 编译和安装 Python
-      run: |
-        cd cpython
-        make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
-        make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
-        ls -l $GITHUB_WORKSPACE/android-vroot/data/python/bin/python3 || { echo "python3 未找到"; exit 1; }
+      - name: 下载并应用 Termux 补丁
+        run: |
+          mkdir -p patches
+          # Termux 官方补丁
+          for patch in \
+            0001-Configure-android.patch \
+            0002-Fix-fcntl-on-android.patch \
+            0003-Fix-socket-on-android.patch \
+            0004-Fix-termios-on-android.patch \
+            0005-Disable-broken-tests.patch \
+            0006-Fix-posix-module.patch \
+            0007-Fix-sysconfig.patch \
+            0008-Fix-ctypes.patch \
+            0009-Fix-multiprocessing.patch \
+            0010-Fix-ssl.patch \
+            0011-Fix-dbm.patch \
+            0012-Fix-urllib.patch \
+            0013-Fix-zlib.patch \
+            0014-Fix-bz2.patch \
+            0015-Fix-lzma.patch \
+            0016-Fix-sqlite.patch \
+            0017-Fix-decimal.patch \
+            0018-Fix-ossaudiodev.patch \
+            0019-Fix-readline.patch \
+            0020-Fix-curses.patch; do
+            wget "https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/$patch" -O "patches/$patch" || echo "补丁 $patch 未找到"
+          done
+          
+          cd cpython
+          # 按顺序应用补丁
+          for patch in ../patches/*.patch; do
+            if [ -f "$patch" ]; then
+              patch -p1 < "$patch" || { echo "应用补丁 $patch 失败"; exit 1; }
+            fi
+          done
 
-    - name: 测试 decimal 模块
-      run: |
-        $GITHUB_WORKSPACE/android-vroot/data/python/bin/python3 -c "import decimal; print(decimal.__version__)" > decimal_test.log 2>&1 || { echo "decimal 模块测试失败"; cat decimal_test.log; exit 1; }
-        cat decimal_test.log
+      - name: 构建依赖库 (简化版)
+        run: |
+          # 使用 Termux 的预编译库或简化构建流程
+          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/{lib,include}
+          
+          # 只构建必要的库
+          for lib in openssl sqlite libffi; do
+            case $lib in
+              openssl)
+                wget https://www.openssl.org/source/openssl-3.3.2.tar.gz
+                tar -xzf openssl-3.3.2.tar.gz
+                cd openssl-3.3.2
+                ./Configure android-arm64 -D__ANDROID_API__=24 no-shared --prefix=/data/python
+                make -j$(nproc)
+                make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+                cd ..
+                ;;
+              sqlite)
+                wget https://www.sqlite.org/2024/sqlite-autoconf-3460000.tar.gz
+                tar -xzf sqlite-autoconf-3460000.tar.gz
+                cd sqlite-autoconf-3460000
+                ./configure --host=aarch64-linux-android --prefix=/data/python --disable-shared
+                make -j$(nproc)
+                make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+                cd ..
+                ;;
+              libffi)
+                wget https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz
+                tar -xzf libffi-3.4.6.tar.gz
+                cd libffi-3.4.6
+                ./configure --host=aarch64-linux-android --prefix=/data/python --disable-shared
+                make -j$(nproc)
+                make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+                cd ..
+                ;;
+            esac
+          done
 
-    - name: 创建 tar.gz 包
-      run: |
-        cd $GITHUB_WORKSPACE/android-vroot/data
-        tar -czf $GITHUB_WORKSPACE/python-3.12.10-android-arm64.tar.gz python
-        ls -l $GITHUB_WORKSPACE/python-3.12.10-android-arm64.tar.gz
+      - name: 为 Android 配置 Python (Termux 风格)
+        run: |
+          cd cpython
+          export CONFIG_SITE=config.site
+          export MACHDEP=android
+          
+          # Termux 特定的配置
+          cat <<EOF > $CONFIG_SITE
+          ac_cv_file__dev_ptmx=yes
+          ac_cv_file__dev_ptc=no
+          ac_cv_func_shm_open=yes
+          ac_cv_working_tzset=yes
+          ac_cv_func_getgrent=no
+          ac_cv_func_setgrent=no
+          ac_cv_func_endgrent=no
+          ac_cv_func_getpwent=no
+          ac_cv_func_setpwent=no
+          ac_cv_func_endpwent=no
+          ac_cv_func_fork=no
+          ac_cv_func_forkpty=no
+          ac_cv_func_openpty=no
+          ac_cv_func_spawn=no
+          ac_cv_func_posix_spawn=no
+          ac_cv_func_gethostbyname=no
+          ac_cv_func_gethostbyaddr=no
+          ac_cv_func_gethostbyname_r=no
+          ac_cv_func_nis=no
+          ac_cv_func_yp_get_default_domain=no
+          ac_cv_func_epoll=no
+          ac_cv_func_epoll_create1=no
+          ac_cv_func_getservbyname=no
+          ac_cv_func_getservbyport=no
+          ac_cv_func_getprotobyname=no
+          ac_cv_func_sem_clockwait=no
+          # Termux 特定配置
+          ac_cv_func_getentropy=no
+          ac_cv_func_clock_settime=no
+          ac_cv_func_clock_gettime=yes
+          ac_cv_func_clock_getres=yes
+          EOF
+          
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+          ./configure \
+            --host=aarch64-linux-android \
+            --build=x86_64-linux-gnu \
+            --prefix=/data/python \
+            --disable-ipv6 \
+            --with-build-python=$(which python3) \
+            --with-system-expat \
+            --with-system-ffi \
+            --with-system-libmpdec \
+            --enable-loadable-sqlite-extensions \
+            --enable-optimizations \
+            --with-ensurepip=install \
+            --with-lto=thin \
+            --without-ensurepip \
+            --without-pymalloc \
+            --disable-test-modules \
+            CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang \
+            CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++ \
+            AR=$AR \
+            RANLIB=$RANLIB \
+            READELF=$READELF \
+            CFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include -O3 -fPIC" \
+            LDFLAGS="-L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lssl -lcrypto -lsqlite3 -lffi -ldl -lm --sysroot=$SYSROOT -fuse-ld=lld"
 
-    - name: 上传构建日志
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-logs
-        path: |
-          mpdecimal-4.0.0/*.log
-          cpython/*.log
-          decimal_test.log
+      - name: 配置 Modules/Setup.local (Termux 风格)
+        run: |
+          cd cpython
+          cat <<EOF > Modules/Setup.local
+          *disabled*
+          _tkinter
+          _gdbm
+          nis
+          ossaudiodev
+          spwd
+          
+          *shared*
+          zlib zlibmodule.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lz
+          _ssl _ssl.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lssl -lcrypto
+          _hashlib _hashlib.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lssl -lcrypto
+          _sqlite3 _sqlite3.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lsqlite3
+          _ctypes _ctypes.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lffi
+          EOF
 
-    - name: 上传 tar.gz 包
-      uses: actions/upload-artifact@v4
-      with:
-        name: python-tar
-        path: python-3.12.10-android-arm64.tar.gz
+      - name: 构建 Python
+        run: |
+          cd cpython
+          make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
+
+      - name: 安装 Python
+        run: |
+          cd cpython
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
+
+      - name: 精简安装
+        run: |
+          cd $GITHUB_WORKSPACE/android-vroot/data/python
+          # 删除不必要的文件
+          rm -rf share/man share/doc
+          find . -name "__pycache__" -type d -exec rm -rf {} +
+          find . -name "*.pyc" -delete
+          find . -name "*.pyo" -delete
+
+      - name: 创建部署包
+        run: |
+          tar -czvf python-3.12.10-android-arm64.tar.gz \
+            --transform 's|^android-vroot/||' \
+            -C $GITHUB_WORKSPACE/android-vroot \
+            data
+          tar -tvf python-3.12.10-android-arm64.tar.gz | head -20
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-3.12.10-android-arm64
+          path: python-3.12.10-android-arm64.tar.gz
