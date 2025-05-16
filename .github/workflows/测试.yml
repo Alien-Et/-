@@ -86,16 +86,32 @@ jobs:
 
       - name: 下载 Python 3.12.8 源码
         run: |
-          wget https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz
+          echo "下载 Python 3.12.8 源码"
+          wget --tries=3 --timeout=30 https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz -O Python-3.12.8.tar.xz
+          echo "验证下载文件"
+          if [ -f "Python-3.12.8.tar.xz" ]; then
+            echo "文件存在，检查完整性"
+            echo "d66e6b4f4d9e20754c9a9fd98f2e40fb0000a3a3d8f0f1cc188896a8c2a1a47b  Python-3.12.8.tar.xz" | sha256sum -c -
+          else
+            echo "错误: 下载失败，Python-3.12.8.tar.xz 不存在"
+            exit 1
+          fi
+          echo "解压源码"
           tar -xf Python-3.12.8.tar.xz
-          mv Python-3.12.8 cpython
+          if [ -d "Python-3.12.8" ]; then
+            echo "Python-3.12.8 目录存在"
+            mv Python-3.12.8 cpython
+          else
+            echo "错误: 解压失败，Python-3.12.8 目录不存在"
+            exit 1
+          fi
           echo "验证 cpython 目录"
           ls -l cpython
           if [ -f "cpython/setup.py" ]; then
             echo "setup.py 存在"
           else
             echo "错误: setup.py 不存在"
-            ls -l Python-3.12.8
+            ls -l cpython
             exit 1
           fi
 
