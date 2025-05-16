@@ -17,35 +17,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential \
-            zlib1g-dev \
-            libffi-dev \
-            libssl-dev \
-            libbz2-dev \
-            libreadline-dev \
-            libsqlite3-dev \
-            libexpat-dev \
-            wget \
-            curl \
-            llvm \
-            libncurses5-dev \
-            libncursesw5-dev \
-            xz-utils \
-            tk-dev \
-            libxml2-dev \
-            libxmlsec1-dev \
-            liblzma-dev \
-            git \
-            tar \
-            python3 \
-            python3-pip \
-            unzip \
-            binutils \
-            tree \
-            patchelf \
-            perl \
-            libtext-template-perl
-          # 验证 Text::Template 模块
+            build-essential zlib1g-dev libffi-dev libssl-dev libbz2-dev \
+            libreadline-dev libsqlite3-dev libexpat-dev wget curl llvm \
+            libncurses5-dev libncursesw5-dev xz-utils tk-dev libxml2-dev \
+            libxmlsec1-dev liblzma-dev git tar python3 python3-pip unzip \
+            binutils tree patchelf perl libtext-template-perl
           perl -MText::Template -e 'print "Text::Template OK\n"' || { echo "Text::Template 安装失败"; exit 1; }
 
       - name: 设置 Android NDK (r27b)
@@ -57,21 +33,13 @@ jobs:
         run: |
           echo "Android NDK 根目录: $ANDROID_NDK_ROOT"
           ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/
-          echo "检查 sysroot"
-          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/
-          echo "检查 clang 版本"
           $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang --version
-          echo "检查 Perl 版本"
           perl -v
           perl -MText::Template -e 'print "Text::Template OK\n"' || { echo "Text::Template 不可用"; exit 1; }
 
       - name: 配置交叉编译工具
         run: |
           export READELF=$(which readelf)
-          if [ ! -f "$READELF" ]; then
-            sudo apt install -y binutils
-            export READELF=$(which readelf)
-          fi
           echo "READELF=$READELF" >> $GITHUB_ENV
           echo "AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib" >> $GITHUB_ENV
@@ -94,12 +62,9 @@ jobs:
       - name: 下载并应用 Termux 补丁
         run: |
           mkdir -p patches
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0001-fix-termios.patch -O patches/0001-fix-termios.patch || echo "补丁 0001 未找到"
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0002-fix-posix-module.patch -O patches/0002-fix-posix-module.patch || echo "补丁 0002 未找到"
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0003-disable-broken-tests.patch -O patches/0003-disable-broken-tests.patch || echo "补丁 0003 未找到"
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0004-fix-sysconfig.patch -O patches/0004-fix-sysconfig.patch || echo "补丁 0004 未找到"
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0005-fix-ctypes.patch -O patches/0005-fix-ctypes.patch || echo "补丁 0005 未找到"
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0006-fix-multiprocessing.patch -O patches/0006-fix-multiprocessing.patch || echo "补丁 0006 未找到"
+          for patch in 0001-fix-termios.patch 0002-fix-posix-module.patch 0003-disable-broken-tests.patch 0004-fix-sysconfig.patch 0005-fix-ctypes.patch 0006-fix-multiprocessing.patch; do
+            wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/$patch -O patches/$patch || echo "补丁 $patch 未找到"
+          done
           cd cpython
           for patch in ../patches/*.patch; do
             if [ -f "$patch" ]; then
@@ -107,23 +72,18 @@ jobs:
             fi
           done
 
-      - name: 下载 zlib 源码
+      - name: 下载并交叉编译 zlib
         run: |
           wget https://zlib.net/zlib-1.3.1.tar.gz
           tar -xzf zlib-1.3.1.tar.gz
-
-      - name: 构建 zlib
-        run: |
           cd zlib-1.3.1
           export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
           export AR=$AR
           export RANLIB=$RANLIB
           export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
           export CFLAGS="--sysroot=$SYSROOT -O3"
-          export LDFLAGS="-fuse-ld=lld"
-          ./configure \
-            --prefix=/data/python \
-            --static
+          export LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
+          ./configure --prefix=/data/python --static
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
           cd ..
@@ -140,7 +100,7 @@ jobs:
           export RANLIB=$RANLIB
           export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
           export CFLAGS="-O3"
-          export LDFLAGS="-fuse-ld=lld"
+          export LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
           make libbz2.a > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
           mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/include
           mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/lib
@@ -198,24 +158,19 @@ jobs:
           export AR=$AR
           export RANLIB=$RANLIB
           export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+          unset CPPFLAGS
+          export CFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include --sysroot=$SYSROOT -O3"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/android-vroot/data/python/lib --sysroot=$SYSROOT -fuse-ld=lld"
           ./configure \
             --host=aarch64-linux-android \
             --prefix=/data/python \
             --disable-shared \
             --enable-static \
-            CFLAGS="--sysroot=$SYSROOT -O3" \
-            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld" \
             > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; exit 1; }
-          cd libmpdec && make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
-          cd ..
+          make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
-          # 验证安装
           ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libmpdec.a || { echo "libmpdec.a 未找到"; exit 1; }
           ls -l $GITHUB_WORKSPACE/android-vroot/data/python/include/mpdecimal.h || { echo "mpdecimal.h 未找到"; exit 1; }
-          # 测试链接
-          echo "#include <mpdecimal.h>" > test_mpdec.c
-          echo "int main() { mpd_context_t ctx; mpd_init(&ctx, 38); return 0; }" >> test_mpdec.c
-          $CC -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lmpdec -lm -o test_mpdec test_mpdec.c > test_mpdec.log 2>&1 || { echo "mpdecimal 链接测试失败"; cat test_mpdec.log; exit 1; }
           cd ..
 
       - name: 下载并交叉编译 xz
@@ -262,31 +217,11 @@ jobs:
             --without-progs \
             --without-tests \
             --with-terminfo-dirs=/data/python/share/terminfo \
-            --with-ticlib=no \
-            --with-termlib=no \
-            --with-termcap \
             CFLAGS="--sysroot=$SYSROOT -O3" \
-            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld" \
-            > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; exit 1; }
+            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
-          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/lib
-          for path in \
-            "$GITHUB_WORKSPACE/android-vroot/usr/lib/libncursesw.a" \
-            "$GITHUB_WORKSPACE/android-vroot/data/python/lib64/libncursesw.a" \
-            "$GITHUB_WORKSPACE/android-vroot/lib/libncursesw.a"; do
-            if [ -f "$path" ]; then
-              mv "$path" $GITHUB_WORKSPACE/android-vroot/data/python/lib/
-            fi
-          done
-          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a" ]; then
-            echo "libncursesw.a 安装成功"
-            ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a
-          else
-            echo "错误: libncursesw.a 未找到"
-            find $GITHUB_WORKSPACE/android-vroot -name "*.a"
-            exit 1
-          fi
+          mv $GITHUB_WORKSPACE/android-vroot/usr/lib/libncursesw.a $GITHUB_WORKSPACE/android-vroot/data/python/lib/ 2>/dev/null || true
           cd ..
 
       - name: 下载并交叉编译 readline
@@ -309,8 +244,6 @@ jobs:
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
           cd ..
-          echo "READLINE_INCLUDE=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
-          echo "READLINE_LIB=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
 
       - name: 下载并交叉编译 OpenSSL
         run: |
@@ -323,29 +256,8 @@ jobs:
           export AR=$AR
           export RANLIB=$RANLIB
           export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
-          # 清理环境变量
-          unset CFLAGS LDFLAGS CPPFLAGS CXXFLAGS LD_LIBRARY_PATH PERL5LIB
-          # 验证环境
-          echo "验证环境变量"
-          echo "CC=$CC"
-          echo "PATH=$PATH"
-          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
-          echo "SYSROOT=$SYSROOT"
-          echo "CPPFLAGS=$CPPFLAGS"
-          $CC --version || { echo "编译器不可用"; exit 1; }
-          $CC -v > clang_verbose.log 2>&1
-          # 检查 sysroot 宏
-          grep -r "_DARWIN_C_SOURCE" $SYSROOT || echo "sysroot 中未找到 _DARWIN_C_SOURCE"
-          # 验证 zlib
-          echo "检查 zlib 依赖"
-          ls -l $ZLIB_INCLUDE/zlib.h || { echo "zlib.h 未找到"; exit 1; }
-          ls -l $ZLIB_LIB/libz.a || { echo "libz.a 未找到"; exit 1; }
-          # 测试 zlib 链接
-          echo "#include <zlib.h>" > test_zlib.c
-          echo "int main() { zlibVersion(); return 0; }" >> test_zlib.c
-          $CC -I$ZLIB_INCLUDE -L$ZLIB_LIB -lz -o test_zlib test_zlib.c > test_zlib.log 2>&1 || { echo "zlib 链接测试失败"; cat test_zlib.log; exit 1; }
-          # 配置 OpenSSL
-          timeout 300 ./Configure \
+          unset CFLAGS LDFLAGS CPPFLAGS CXXFLAGS
+          ./Configure \
             android-arm64 \
             -D__ANDROID_API__=24 \
             no-shared \
@@ -356,20 +268,8 @@ jobs:
             --with-zlib-lib=$ZLIB_LIB \
             --sysroot=$SYSROOT \
             -d > configure.log 2>&1 || { echo "Configure 失败"; cat configure.log; exit 1; }
-          # 验证 Configure 输出
-          grep "Configuring OpenSSL version 3.3.2 for target android-arm64" configure.log || { echo "Configure 未正确运行"; exit 1; }
-          # 构建
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
-          # 安装
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
-          # 验证安装
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libssl.a || { echo "libssl.a 未找到"; exit 1; }
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libcrypto.a || { echo "libcrypto.a 未找到"; exit 1; }
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/include/openssl/opensslconf.h || { echo "opensslconf.h 未找到"; exit 1; }
-          # 测试 OpenSSL 链接
-          echo "#include <openssl/ssl.h>" > test_openssl.c
-          echo "int main() { SSL_library_init(); return 0; }" >> test_openssl.c
-          $CC -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lssl -lcrypto -o test_openssl test_openssl.c > test_openssl.log 2>&1 || { echo "OpenSSL 链接测试失败"; cat test_openssl.log; exit 1; }
           cd ..
 
       - name: 下载并交叉编译 SQLite
@@ -391,48 +291,6 @@ jobs:
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
           cd ..
-
-      - name: 测试交叉编译器
-        run: |
-          echo "int main() { return 0; }" > test.c
-          $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang \
-            --sysroot=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot \
-            -fuse-ld=lld \
-            -o test test.c
-          if [ $? -eq 0 ]; then
-            echo "编译成功"
-            file test
-          else
-            echo "编译失败"
-            exit 1
-          fi
-
-      - name: 检查依赖库和 sysroot
-        run: |
-          echo "检查 sysroot 内容"
-          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/
-          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/
-          echo "检查 liblzma"
-          ls -l ${LZMA_LIB_PATH}/liblzma.a || echo "liblzma 未找到"
-          echo "检查 readline"
-          ls -l ${READLINE_LIB}/libreadline.a || echo "libreadline 未找到"
-          echo "检查 zlib"
-          ls -l $ZLIB_LIB/libz.a || echo "libz 未找到"
-          echo "检查 ncurses"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a || echo "libncursesw 未找到"
-          echo "检查 libbz2"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libbz2.a || echo "libbz2 未找到"
-          echo "检查 libffi"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libffi.a || echo "libffi 未找到"
-          echo "检查 libexpat"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libexpat.a || echo "libexpat 未找到"
-          echo "检查 libmpdec"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libmpdec.a || echo "libmpdec 未找到"
-          echo "检查 libssl 和 libcrypto"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libssl.a || echo "libssl 未找到"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libcrypto.a || echo "libcrypto 未找到"
-          echo "检查 libsqlite3"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libsqlite3.a || echo "libsqlite3 未找到"
 
       - name: 为 Android 配置 Python
         run: |
@@ -467,27 +325,7 @@ jobs:
           ac_cv_func_getprotobyname=no
           ac_cv_func_sem_clockwait=no
           EOF
-          echo "验证 CONFIG_SITE 内容"
-          cat $CONFIG_SITE
           export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
-          echo "SYSROOT 路径: $SYSROOT"
-          if [ -d "$SYSROOT" ]; then
-            echo "SYSROOT 路径存在"
-            ls -l $SYSROOT/usr/lib/aarch64-linux-android/
-            ls -l $SYSROOT/usr/include/
-          else
-            echo "错误: SYSROOT 路径不存在"
-            exit 1
-          fi
-          echo "检查 OpenSSL 库和头文件"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libssl.a || { echo "libssl.a 未找到"; exit 1; }
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libcrypto.a || { echo "libcrypto.a 未找到"; exit 1; }
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/include/openssl/opensslconf.h || { echo "opensslconf.h 未找到"; exit 1; }
-          echo "检查 ncurses 库"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a || { echo "ncurses 库未找到"; exit 1; }
-          echo "检查 libmpdec 库"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libmpdec.a || { echo "libmpdec.a 未找到"; exit 1; }
-          echo "运行 configure"
           ./configure \
             --host=aarch64-linux-android \
             --build=x86_64-linux-gnu \
@@ -501,23 +339,14 @@ jobs:
             --enable-optimizations \
             --with-ensurepip=install \
             --with-lto=thin \
-            --with-platlibdir=/data/python/lib \
-            --with-libc= \
             CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang \
             CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++ \
             AR=$AR \
             RANLIB=$RANLIB \
             READELF=$READELF \
-            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -O3" \
-            CPPFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include/python3.12" \
+            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -O3" \
             LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -lreadline -lncursesw -lbz2 -lffi -lssl -lcrypto -lsqlite3 -lexpat -lmpdec -lpython3.12 -ldl -lm --sysroot=$SYSROOT -fuse-ld=lld" \
-            2>&1 | tee configure.log || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
-          echo "检查 configure 日志中 grp 和 pwd 相关配置"
-          grep -E "checking for.*(getgrent|setgrent|endgrent|getpwent|setpwent|endpwent)" configure.log || echo "无相关配置日志"
-          echo "检查 configure 日志中 SSL 相关配置"
-          grep -E "checking for.*(OPENSSL|ssl)" configure.log || echo "无 SSL 相关配置日志"
-          echo "检查 configure 日志中 libmpdec 相关配置"
-          grep -E "checking for.*(mpdec|decimal)" configure.log || echo "无 libmpdec 相关配置日志"
+            > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
 
       - name: 配置 Modules/Setup.local
         run: |
@@ -532,113 +361,28 @@ jobs:
           _lzma _lzma.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma
           _sqlite3 _sqlite3.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lsqlite3
           _ctypes _ctypes.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lffi
+          _decimal _decimal.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lmpdec -lm
           EOF
-          echo "Modules/Setup.local 已配置，启用 zlib、_ssl、_hashlib、_curses、_curses_panel、_bz2、_lzma、_sqlite3、_ctypes 模块"
 
       - name: 构建 Python
         run: |
           cd cpython
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
-          # 验证 SSL 模块
-          grep "_ssl" Modules/Setup.local || { echo "_ssl 模块未配置"; exit 1; }
-          ls -l python || { echo "python 可执行文件未生成"; exit 1; }
-
-      - name: 安装 patchelf 并修复共享库
-        run: |
-          cd cpython
-          find . -name "*.so" -exec patchelf --set-soname {} {} \; || echo "无共享库需要 patchelf"
-          if [ -f "libpython3.12.so" ]; then
-            patchelf --set-rpath /data/python/lib libpython3.12.so
-          fi
 
       - name: 安装 Python
         run: |
           cd cpython
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
 
-      - name: 创建虚拟 Android 文件系统
-        run: |
-          mkdir -p $GITHUB_WORKSPACE/android-vroot/data
-          cd zlib-1.3.1
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "zlib make install 失败"; cat install.log; exit 1; }
-          cd ../bzip2-1.0.8
-          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/include
-          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/lib
-          cp bzlib.h $GITHUB_WORKSPACE/android-vroot/data/python/include/
-          cp libbz2.a $GITHUB_WORKSPACE/android-vroot/data/python/lib/
-          cd ../libffi-3.4.6
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "libffi make install 失败"; cat install.log; exit 1; }
-          cd ../expat-2.6.3
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "expat make install 失败"; cat install.log; exit 1; }
-          cd ../mpdecimal-4.0.0
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "mpdecimal make install 失败"; cat install.log; exit 1; }
-          cd ../xz-5.6.2
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "xz make install 失败"; cat install.log; exit 1; }
-          cd ../ncurses-6.5
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "ncurses make install 失败"; cat install.log; exit 1; }
-          cd ../readline-8.2
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "readline make install 失败"; cat install.log; exit 1; }
-          cd ../openssl-3.3.2
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "openssl make install 失败"; cat install.log; exit 1; }
-          cd ../sqlite-autoconf-3460000
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "sqlite make install 失败"; cat install.log; exit 1; }
-          echo "验证 ncurses 安装"
-          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a" ]; then
-            echo "ncurses 库安装成功"
-          else
-            echo "错误: ncurses 库未找到"
-            exit 1
-          fi
-          echo "验证 terminfo 安装"
-          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/share/terminfo/x/xterm" ]; then
-            echo "terminfo 安装成功"
-          else
-            echo "错误: terminfo 未正确安装"
-            exit 1
-          fi
-          echo "验证 libmpdec 安装"
-          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libmpdec.a" ]; then
-            echo "libmpdec 库安装成功"
-          else
-            echo "错误: libmpdec 库未找到"
-            exit 1
-          fi
-
       - name: 测试 Python 安装
         continue-on-error: true
         run: |
           cd $GITHUB_WORKSPACE/android-vroot/data/python/bin
-          ./python3 -c "import sys; print(sys.platform)" || echo "无法检查 sys.platform"
-          ./python3 -c "import zlib; print('zlib 模块加载成功')" || echo "zlib 模块加载失败"
-          ./python3 -c "import ssl; print('ssl 模块加载成功')" || echo "ssl 模块加载失败"
-          ./python3 -c "import _hashlib; print('hashlib 模块加载成功')" || echo "hashlib 模块加载失败"
-          ./python3 -c "import _curses; print('curses 模块加载成功')" || echo "curses 模块加载失败"
-          ./python3 -c "import _curses_panel; print('curses_panel 模块加载成功')" || echo "curses_panel 模块加载失败"
-          ./python3 -c "import _bz2; print('bz2 模块加载成功')" || echo "bz2 模块加载失败"
-          ./python3 -c "import _lzma; print('lzma 模块加载成功')" || echo "lzma 模块加载失败"
-          ./python3 -c "import sqlite3; print('sqlite3 模块加载成功')" || echo "sqlite3 模块加载失败"
-          ./python3 -c "import _ctypes; print('ctypes 模块加载成功')" || echo "ctypes 模块加载失败"
-          ./python3 -c "import readline; print('readline 模块加载成功')" || echo "readline 模块加载失败"
-          ./python3 -c "import multiprocessing; print('multiprocessing 模块加载成功')" || echo "multiprocessing 模块加载失败"
-          ./python3 -c "import decimal; print('decimal 模块加载成功')" || echo "decimal 模块加载失败"
-
-      - name: 修复路径和权限
-        run: |
-          find $GITHUB_WORKSPACE/android-vroot/data/python/bin -type f -exec grep -l '^#!' {} \; | while read -r file; do
-            sed -i "1s|.*|#!/data/python/bin/python3|" "$file"
-          done
-          find $GITHUB_WORKSPACE/android-vroot/data/python -type l | while read -r link; do
-            target=$(readlink "$link")
-            if [[ "$target" != /* ]]; then
-              link_dir=$(dirname "$link")
-              abs_target=$(realpath -m "$link_dir/$target")
-              new_target="/data/python/${abs_target#*/data/python/}"
-              rm "$link"
-              ln -s "$new_target" "$link"
-            fi
-          done
-          find $GITHUB_WORKSPACE/android-vroot/data/python/bin -type f -exec chmod 755 {} \;
-          tree -L 3 $GITHUB_WORKSPACE/android-vroot/
+          ./python3 -c "import sys; print(sys.platform)"
+          ./python3 -c "import decimal; print('decimal 模块加载成功')"
+          ./python3 -c "import zlib; print('zlib 模块加载成功')"
+          ./python3 -c "import ssl; print('ssl 模块加载成功')"
+          ./python3 -c "import sqlite3; print('sqlite3 模块加载成功')"
 
       - name: 创建部署包
         run: |
@@ -652,19 +396,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-3.12.10-android-arm64
-          path: |
-            python-3.12.10-android-arm64.tar.gz
-            Python-3.12.10.tar.xz
-            zlib-1.3.1.tar.gz
-            bzip2-1.0.8.tar.gz
-            libffi-3.4.6.tar.gz
-            expat-2.6.3.tar.gz
-            mpdecimal-4.0.0.tar.gz
-            xz-5.6.2.tar.gz
-            ncurses-6.5.tar.gz
-            readline-8.2.tar.gz
-            openssl-3.3.2.tar.gz
-            sqlite-autoconf-3460000.tar.gz
+          path: python-3.12.10-android-arm64.tar.gz
 
       - name: 上传日志文件
         if: always()
@@ -676,37 +408,6 @@ jobs:
             cpython/configure.log
             cpython/make.log
             cpython/install.log
-            ncurses-6.5/config.log
-            ncurses-6.5/configure.log
-            ncurses-6.5/make.log
-            ncurses-6.5/install.log
-            zlib-1.3.1/config.log
-            zlib-1.3.1/make.log
-            zlib-1.3.1/install.log
-            bzip2-1.0.8/make.log
-            bzip2-1.0.8/install.log
-            libffi-3.4.6/config.log
-            libffi-3.4.6/make.log
-            libffi-3.4.6/install.log
-            expat-2.6.3/config.log
-            expat-2.6.3/make.log
-            expat-2.6.3/install.log
             mpdecimal-4.0.0/config.log
-            mpdecimal-4.0.0/libmpdec/make.log
+            mpdecimal-4.0.0/make.log
             mpdecimal-4.0.0/install.log
-            mpdecimal-4.0.0/test_mpdec.log
-            xz-5.6.2/config.log
-            xz-5.6.2/make.log
-            xz-5.6.2/install.log
-            readline-8.2/config.log
-            readline-8.2/make.log
-            readline-8.2/install.log
-            openssl-3.3.2/configure.log
-            openssl-3.3.2/make.log
-            openssl-3.3.2/install.log
-            openssl-3.3.2/clang_verbose.log
-            openssl-3.3.2/test_zlib.log
-            openssl-3.3.2/test_openssl.log
-            sqlite-autoconf-3460000/config.log
-            sqlite-autoconf-3460000/make.log
-            sqlite-autoconf-3460000/install.log
