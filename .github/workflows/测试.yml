@@ -97,6 +97,22 @@ jobs:
           wget https://zlib.net/zlib-1.3.1.tar.gz
           tar -xzf zlib-1.3.1.tar.gz
 
+      - name: 构建 zlib
+        run: |
+          cd zlib-1.3.1
+          export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+          export AR=$AR
+          export RANLIB=$RANLIB
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+          export CFLAGS="--sysroot=$SYSROOT -D__ANDROID_API__=21"
+          export LDFLAGS="-fuse-ld=lld"
+          ./configure \
+            --prefix=/data/python \
+            --static
+          make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
+          cd ..
+
       - name: 下载并交叉编译 bzip2
         run: |
           wget https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
@@ -236,16 +252,22 @@ jobs:
           cd openssl-3.3.2
           export ANDROID_NDK_HOME=$ANDROID_NDK_ROOT
           export PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
-          export CC=aarch64-linux-android21-clang
+          export CC=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
           export AR=$AR
           export RANLIB=$RANLIB
           export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
           # 清理可能冲突的环境变量
-          unset CFLAGS LDFLAGS
+          unset CFLAGS LDFLAGS CPPFLAGS CXXFLAGS
+          # 验证工具链和依赖
           echo "验证环境变量"
           echo "CC=$CC"
           echo "PATH=$PATH"
           echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
+          echo "SYSROOT=$SYSROOT"
+          $CC --version || { echo "编译器不可用"; exit 1; }
+          echo "检查 zlib 依赖"
+          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/include/zlib.h || { echo "zlib.h 未找到"; exit 1; }
+          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libz.a || { echo "libz.a 未找到"; exit 1; }
           ./Configure \
             android-arm64 \
             -D__ANDROID_API__=21 \
@@ -276,22 +298,6 @@ jobs:
             --enable-static \
             CFLAGS="--sysroot=$SYSROOT -D__ANDROID_API__=21" \
             LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
-          make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
-          cd ..
-
-      - name: 构建 zlib
-        run: |
-          cd zlib-1.3.1
-          export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
-          export AR=$AR
-          export RANLIB=$RANLIB
-          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
-          export CFLAGS="--sysroot=$SYSROOT -D__ANDROID_API__=21"
-          export LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
-          ./configure \
-            --prefix=/data/python \
-            --static
           make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
           cd ..
