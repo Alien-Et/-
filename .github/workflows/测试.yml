@@ -78,7 +78,7 @@ jobs:
             echo "NDK 提供 liblzma"
             echo "LZMA_H_PATH=$(dirname $LZMA_H)" >> $GITHUB_ENV
             echo "LZMA_LIB_PATH=$(dirname $LZMA_LIB)" >> $GITHUB_ENV
-            Thorpe            echo "USE_NDK_LZMA=true" >> $GITHUB_ENV
+            echo "USE_NDK_LZMA=true" >> $GITHUB_ENV
           else
             echo "NDK 未提供 liblzma，将交叉编译 xz"
             echo "USE_NDK_LZMA=false" >> $GITHUB_ENV
@@ -183,7 +183,16 @@ jobs:
           ac_cv_file__dev_ptmx=yes
           ac_cv_file__dev_ptc=no
           EOF
-          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_ next 64/sysroot
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+          echo "SYSROOT 路径: $SYSROOT"
+          if [ -d "$SYSROOT" ]; then
+            echo "SYSROOT 路径存在"
+            ls -l $SYSROOT/usr/lib/aarch64-linux-android/
+            ls -l $SYSROOT/usr/include/
+          else
+            echo "错误: SYSROOT  NUOT 路径不存在"
+            exit 1
+          fi
           ./configure \
             --host=aarch64-linux-android \
             --build=x86_64-linux-gnu \
