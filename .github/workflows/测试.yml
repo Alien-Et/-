@@ -1,25 +1,19 @@
-name: Python Android ARM64 Build
+name: 测试
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
-env:
-  PYTHON_VERSION: "3.12.8"
-  ANDROID_NDK_VERSION: "27.2.12479018"
-  INSTALL_PREFIX: "/data/python"
-
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
 
     steps:
       - name: 检出代码
         uses: actions/checkout@v3
 
-      - name: 安装系统依赖
+      - name: 安装构建依赖
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -47,53 +41,223 @@ jobs:
             unzip \
             binutils \
             tree \
-            pkg-config \
-            autoconf \
-            automake \
-            libtool \
-            ninja-build \
-            cmake
+            patchelf
 
-      - name: 设置 Android NDK
+      - name: 设置 Android NDK (r27b)
         uses: android-actions/setup-android@v2
         with:
-          ndk-version: "${{ env.ANDROID_NDK_VERSION }}"
+          ndk-version: "27.2.12479018"
 
-      - name: 配置编译环境
+      - name: 验证 NDK 安装
         run: |
-          echo "NDK_ROOT=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
-          echo "TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64" >> $GITHUB_ENV
-          echo "SYSROOT=$TOOLCHAIN/sysroot" >> $GITHUB_ENV
-          echo "TARGET=aarch64-linux-android" >> $GITHUB_ENV
-          echo "API_LEVEL=21" >> $GITHUB_ENV
-          echo "CC=$TOOLCHAIN/bin/${TARGET}${API_LEVEL}-clang" >> $GITHUB_ENV
-          echo "CXX=$TOOLCHAIN/bin/${TARGET}${API_LEVEL}-clang++" >> $GITHUB_ENV
-          echo "AR=$TOOLCHAIN/bin/llvm-ar" >> $GITHUB_ENV
-          echo "RANLIB=$TOOLCHAIN/bin/llvm-ranlib" >> $GITHUB_ENV
-          echo "READELF=$(which readelf)" >> $GITHUB_ENV
-          echo "CFLAGS=--sysroot=$SYSROOT -DANDROID -fPIC" >> $GITHUB_ENV
-          echo "LDFLAGS=--sysroot=$SYSROOT -fuse-ld=lld" >> $GITHUB_ENV
+          echo "Android NDK 根目录: $ANDROID_NDK_ROOT"
+          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/
+          echo "检查 sysroot"
+          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/
+          echo "检查 clang 版本"
+          $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang --version
 
-      - name: 下载 Python 源码
+      - name: 配置交叉编译工具
         run: |
-          wget https://www.python.org/ftp/python/${{ env.PYTHON_VERSION }}/Python-${{ env.PYTHON_VERSION }}.tar.xz
-          tar -xf Python-${{ env.PYTHON_VERSION }}.tar.xz
-          mv Python-${{ env.PYTHON_VERSION }} cpython
+          export READELF=$(which readelf)
+          if [ ! -f "$READELF" ]; then
+            sudo apt install -y binutils
+            export READELF=$(which readelf)
+          fi
+          echo "READELF=$READELF" >> $GITHUB_ENV
+          echo "AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
+          echo "RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib" >> $GITHUB_ENV
 
-      - name: 预处理 Python 源码
+      - name: 检查 NDK 中的 liblzma
+        id: check_liblzma
+        run: |
+          echo "检查 NDK sysroot 中的 lzma.h"
+          LZMA_H=$(find $ANDROID_NDK_ROOT -name lzma.h)
+          echo "检查 NDK sysroot 中的 liblzma"
+          LZMA_LIB=$(find $ANDROID_NDK_ROOT -name liblzma.a -o -name liblzma.so)
+          if [ -n "$LZMA_H" ] && [ -n "$LZMA_LIB" ]; then
+            echo "NDK 提供 liblzma"
+            echo "LZMA_H_PATH=$(dirname $LZMA_H)" >> $GITHUB_ENV
+            echo "LZMA_LIB_PATH=$(dirname $LZMA_LIB)" >> $GITHUB_ENV
+            echo "USE_NDK_LZMA=true" >> $GITHUB_ENV
+          else
+            echo "NDK 未提供 liblzma，将交叉编译 xz"
+            echo "USE_NDK_LZMA=false" >> $GITHUB_ENV
+          fi
+
+      - name: 下载 Python 3.12.8 源码
+        run: |
+          wget https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz
+          tar -xf Python-3.12.8.tar.xz
+          mv Python-3.12.8 cpython
+
+      - name: 下载并应用 Termux 补丁
+        run: |
+          mkdir -p patches
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0001-fix-termios.patch -O patches/0001-fix-termios.patch || echo "补丁 0001 未找到"
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0002-fix-posix-module.patch -O patches/0002-fix-posix-module.patch || echo "补丁 0002 未找到"
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0003-disable-broken-tests.patch -O patches/0003-disable-broken-tests.patch || echo "补丁 0003 未找到"
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0004-fix-sysconfig.patch -O patches/0004-fix-sysconfig.patch || echo "补丁 0004 未找到"
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0005-fix-ctypes.patch -O patches/0005-fix-ctypes.patch || echo "补丁 0005 未找到"
+          cd cpython
+          for patch in ../patches/*.patch; do
+            if [ -f "$patch" ]; then
+              patch -p1 < "$patch" || { echo "应用补丁 $patch 失败"; exit 1; }
+            fi
+          done
+
+      - name: 下载 zlib 源码
+        run: |
+          wget https://zlib.net/zlib-1.3.1.tar.gz
+          tar -xzf zlib-1.3.1.tar.gz
+
+      - name: 下载并交叉编译 xz（如果 NDK 未提供 liblzma）
+        if: env.USE_NDK_LZMA == 'false'
+        run: |
+          wget https://tukaani.org/xz/xz-5.6.2.tar.gz
+          tar -xzf xz-5.6.2.tar.gz
+          cd xz-5.6.2
+          export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+          export AR=$AR
+          export RANLIB=$RANLIB
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+          ./configure \
+            --host=aarch64-linux-android \
+            --prefix=/data/python \
+            --disable-shared \
+            --enable-static \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
+          make -j$(nproc) || { echo "make 失败"; cat config.log; exit 1; }
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          cd ..
+          echo "LZMA_H_PATH=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
+          echo "LZMA_LIB_PATH=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
+
+      - name: 下载并交叉编译 ncurses
+        run: |
+          wget https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz
+          tar -xzf ncurses-6.5.tar.gz
+          cd ncurses-6.5
+          export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+          export AR=$AR
+          export RANLIB=$RANLIB
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+          ./configure \
+            --host=aarch64-linux-android \
+            --prefix=/data/python \
+            --disable-shared \
+            --enable-static \
+            --enable-widec \
+            --without-cxx \
+            --without-cxx-binding \
+            --without-ada \
+            --without-manpages \
+            --without-progs \
+            --without-tests \
+            --with-terminfo-dirs=/data/python/share/terminfo \
+            --with-ticlib=no \
+            --with-termlib=no \
+            --with-termcap \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld" \
+            > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; exit 1; }
+          make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
+          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/lib
+          for path in \
+            "$GITHUB_WORKSPACE/android-vroot/usr/lib/libncursesw.a" \
+            "$GITHUB_WORKSPACE/android-vroot/data/python/lib64/libncursesw.a" \
+            "$GITHUB_WORKSPACE/android-vroot/lib/libncursesw.a"; do
+            if [ -f "$path" ]; then
+              mv "$path" $GITHUB_WORKSPACE/android-vroot/data/python/lib/
+            fi
+          done
+          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a" ]; then
+            echo "libncursesw.a 安装成功"
+            ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a
+          else
+            echo "错误: libncursesw.a 未找到"
+            find $GITHUB_WORKSPACE/android-vroot -name "*.a"
+            exit 1
+          fi
+          cd ..
+
+      - name: 下载并交叉编译 readline
+        run: |
+          wget https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz
+          tar -xzf readline-8.2.tar.gz
+          cd readline-8.2
+          export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+          export AR=$AR
+          export RANLIB=$RANLIB
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+          ./configure \
+            --host=aarch64-linux-android \
+            --prefix=/data/python \
+            --disable-shared \
+            --enable-static \
+            bash_cv_wcwidth_broken=no \
+            CFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include --sysroot=$SYSROOT -DANDROID" \
+            LDFLAGS="-L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lncursesw --sysroot=$SYSROOT -fuse-ld=lld"
+          make -j$(nproc) || { echo "make 失败"; cat config.log; exit 1; }
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          cd ..
+          echo "READLINE_INCLUDE=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
+          echo "READLINE_LIB=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
+
+      - name: 构建 zlib
+        run: |
+          cd zlib-1.3.1
+          export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+          export AR=$AR
+          export RANLIB=$RANLIB
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+          export CFLAGS="--sysroot=$SYSROOT -DANDROID"
+          export LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
+          ./configure \
+            --prefix=/data/python \
+            --static
+          make -j$(nproc) || { echo "make 失败"; cat config.log; exit 1; }
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          cd ..
+
+      - name: 测试交叉编译器
+        run: |
+          echo "int main() { return 0; }" > test.c
+          $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
+            --sysroot=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot \
+            -fuse-ld=lld \
+            -o test test.c
+          if [ $? -eq 0 ]; then
+            echo "编译成功"
+            file test
+          else
+            echo "编译失败"
+            INTEGRATION_TEST_STATUS=failed
+            exit 1
+          fi
+
+      - name: 检查依赖库和 sysroot
+        run: |
+          echo "检查 sysroot 内容"
+          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/
+          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/
+          echo "检查 liblzma"
+          ls -l ${LZMA_LIB_PATH}/liblzma.a
+          echo "检查 readline"
+          ls -l ${READLINE_LIB}/libreadline.a
+          echo "检查 zlib"
+          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libz.a
+          echo "检查 ncurses"
+          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a
+
+      - name: 为 Android 配置 Python
         run: |
           cd cpython
-          
-          # 彻底移除不兼容模块
-          rm -f Modules/{grp,pwd,spwd}module.c
-          
-          # 修改构建配置
-          sed -i '/^\(grp\|pwd\|spwd\)/d' Modules/Setup
-          [ -f Modules/Setup.local ] && sed -i '/^\(grp\|pwd\|spwd\)/d' Modules/Setup.local
-          sed -i '/GRP_OBJS/d' Makefile.pre.in
-          
-          # 创建 Android 专用配置
-          cat <<EOF > config.site
+          export CONFIG_SITE=config.site
+          export MACHDEP=android
+          cat <<EOF > $CONFIG_SITE
           ac_cv_file__dev_ptmx=yes
           ac_cv_file__dev_ptc=no
           ac_cv_func_getgrent=no
@@ -102,131 +266,157 @@ jobs:
           ac_cv_func_getpwent=no
           ac_cv_func_setpwent=no
           ac_cv_func_endpwent=no
-          ac_cv_func_getgrgid_r=no
-          ac_cv_func_getgrnam_r=no
+          ac_cv_func_fork=no
+          ac_cv_func_forkpty=no
+          ac_cv_func_openpty=no
+          ac_cv_func_spawn=no
+          ac_cv_func_posix_spawn=no
+          ac_cv_func_gethostbyname=no
+          ac_cv_func_gethostbyaddr=no
+          ac_cv_func_nis=no
+          ac_cv_func_yp_get_default_domain=no
           EOF
-          
-          # 验证修改
-          ! grep -r "grpmodule" . || (echo "发现残留的grpmodule引用" && exit 1)
-
-      - name: 构建依赖库
-        run: |
-          mkdir -p $GITHUB_WORKSPACE/android-vroot/$INSTALL_PREFIX
-          export PREFIX=$GITHUB_WORKSPACE/android-vroot/$INSTALL_PREFIX
-          
-          # 构建 zlib
-          wget https://zlib.net/zlib-1.3.1.tar.gz
-          tar -xzf zlib-1.3.1.tar.gz
-          cd zlib-1.3.1
-          CC=$CC AR=$AR RANLIB=$RANLIB \
-          ./configure --prefix=$INSTALL_PREFIX --static
-          make -j$(nproc)
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
-          cd ..
-          
-          # 构建 ncurses
-          wget https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz
-          tar -xzf ncurses-6.5.tar.gz
-          cd ncurses-6.5
-          CC=$CC AR=$AR RANLIB=$RANLIB \
+          echo "验证 CONFIG_SITE 内容"
+          cat $CONFIG_SITE
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+          echo "SYSROOT 路径: $SYSROOT"
+          if [ -d "$SYSROOT" ]; then
+            echo "SYSROOT 路径存在"
+            ls -l $SYSROOT/usr/lib/aarch64-linux-android/
+            ls -l $SYSROOT/usr/include/
+          else
+            echo "错误: SYSROOT 路径不存在"
+            exit 1
+          fi
+          echo "检查 ncurses 库"
+          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a
+          echo "运行 configure"
           ./configure \
-            --host=$TARGET \
-            --prefix=$INSTALL_PREFIX \
-            --disable-shared \
-            --enable-static \
-            --enable-widec \
-            --without-cxx \
-            CFLAGS="$CFLAGS" \
-            LDFLAGS="$LDFLAGS"
-          make -j$(nproc)
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
-          cd ..
-          
-          # 构建 readline
-          wget https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz
-          tar -xzf readline-8.2.tar.gz
-          cd readline-8.2
-          CC=$CC AR=$AR RANLIB=$RANLIB \
-          ./configure \
-            --host=$TARGET \
-            --prefix=$INSTALL_PREFIX \
-            --disable-shared \
-            --enable-static \
-            bash_cv_wcwidth_broken=no \
-            CFLAGS="$CFLAGS -I$PREFIX/include" \
-            LDFLAGS="$LDFLAGS -L$PREFIX/lib -lncursesw"
-          make -j$(nproc)
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
-          cd ..
-
-      - name: 配置 Python
-        run: |
-          cd cpython
-          make distclean || true
-          rm -f config.cache
-          
-          CONFIG_SITE=config.site ./configure \
-            --host=$TARGET \
+            --host=aarch64-linux-android \
             --build=x86_64-linux-gnu \
             --disable-ipv6 \
             --enable-optimizations \
-            --without-ensurepip \
             --with-build-python=$(which python3) \
-            CC=$CC \
-            CXX=$CXX \
+            CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
+            CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ \
             AR=$AR \
             RANLIB=$RANLIB \
             READELF=$READELF \
-            --prefix=$INSTALL_PREFIX \
-            CFLAGS="$CFLAGS -I$PREFIX/include" \
-            LDFLAGS="$LDFLAGS -L$PREFIX/lib -lreadline -lncursesw -lz -lm -ldl" \
-            2>&1 | tee configure.log
-          
-          # 最终验证
-          ! grep "grpmodule" Makefile || (echo "配置失败: grpmodule 仍然存在" && exit 1)
+            --prefix=/data/python \
+            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID" \
+            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncursesw -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld" \
+            2>&1 | tee configure.log || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
+          echo "检查 configure 日志中 grp 和 pwd 相关配置"
+          grep -E "checking for.*(getgrent|setgrent|endgrent|getpwent|setpwent|endpwent)" configure.log || echo "无相关配置日志"
+
+      - name: 配置 Modules/Setup.local
+        run: |
+          cd cpython
+          cat <<EOF > Modules/Setup.local
+          _ssl _ssl.c -I${LZMA_H_PATH} -L${LZMA_LIB_PATH} -lssl -lcrypto
+          _hashlib _hashlib.c -I${LZMA_H_PATH} -L${LZMA_LIB_PATH} -lssl -lcrypto
+          _sqlite3 _sqlite3.c -I${LZMA_H_PATH} -L${LZMA_LIB_PATH} -lsqlite3
+          zlib zlibmodule.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lz
+          EOF
+
+      - name: 上传 config.log（如果配置失败）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: config-log
+          path: |
+            cpython/config.log
+            cpython/configure.log
+            ncurses-6.5/config.log
+            ncurses-6.5/configure.log
+            ncurses-6.5/make.log
+            ncurses-6.5/install.log
+            zlib-1.3.1/config.log
 
       - name: 构建 Python
         run: |
           cd cpython
-          make -j$(nproc) \
-            PYTHON_FOR_BUILD=$(which python3) \
-            CROSS_COMPILE_TARGET=yes \
-            2>&1 | tee build.log
-          
-          # 检查关键错误
-          if grep -q "Error" build.log; then
-            grep -A 10 -B 10 "Error" build.log
+          make -j$(nproc) || { echo "make 失败"; cat config.log; exit 1; }
+
+      - name: 安装 patchelf 并修复共享库
+        run: |
+          cd cpython
+          find . -name "*.so" -exec patchelf --set-soname {} {} \;
+          if [ -f "libpython3.12.so" ]; then
+            patchelf --set-rpath /data/python/lib libpython3.12.so
+          fi
+
+      - name: 创建虚拟 Android 文件系统
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/android-vroot/data
+          cd cpython
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          cd ../zlib-1.3.1
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          cd ../readline-8.2
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          cd ../ncurses-6.5
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          if [ "${{ env.USE_NDK_LZMA }}" == "false" ]; then
+            cd ../xz-5.6.2
+            make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          fi
+          echo "验证 ncurses 安装"
+          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a" ]; then
+            echo "ncurses 库安装成功"
+          else
+            echo "错误: ncurses 库未找到"
+            exit 1
+          fi
+          echo "验证 terminfo 安装"
+          if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/share/terminfo/x/xterm" ]; then
+            echo "terminfo 安装成功"
+          else
+            echo "错误: terminfo 未正确安装"
             exit 1
           fi
 
-      - name: 安装到虚拟文件系统
+      - name: 测试 Python 安装
         run: |
-          cd cpython
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
-          
-          # 修复 shebang
-          find $GITHUB_WORKSPACE/android-vroot/$INSTALL_PREFIX/bin -type f -exec grep -l '^#!' {} \; | \
-            xargs sed -i "1s|.*|#$INSTALL_PREFIX/bin/python3|"
-          
-          # 验证关键文件
-          [ -f $GITHUB_WORKSPACE/android-vroot/$INSTALL_PREFIX/bin/python3 ] || exit 1
-          [ -f $GITHUB_WORKSPACE/android-vroot/$INSTALL_PREFIX/lib/libpython3.12.a ] || exit 1
+          cd $GITHUB_WORKSPACE/android-vroot/data/python/bin
+          ./python3 -c "import sys; print(sys.platform)"
+          ./python3 -c "import zlib, ssl, sqlite3, readline; print('模块加载成功')"
+          ./python3 -c "import _ctypes; print('ctypes 加载成功')" || echo "_ctypes 不可用"
 
-      - name: 打包发布
+      - name: 修复路径和权限
         run: |
-          cd $GITHUB_WORKSPACE/android-vroot
-          tar -czvf ../python-${{ env.PYTHON_VERSION }}-android-arm64.tar.gz \
-            --transform "s|^data|$INSTALL_PREFIX|" \
+          find $GITHUB_WORKSPACE/android-vroot/data/python/bin -type f -exec grep -l '^#!' {} \; | while read -r file; do
+            sed -i "1s|.*|#!/data/python/bin/python3|" "$file"
+          done
+          find $GITHUB_WORKSPACE/android-vroot/data/python -type l | while read -r link; do
+            target=$(readlink "$link")
+            if [[ "$target" != /* ]]; then
+              link_dir=$(dirname "$link")
+              abs_target=$(realpath -m "$link_dir/$target")
+              new_target="/data/python/${abs_target#*/data/python/}"
+              rm "$link"
+              ln -s "$new_target" "$link"
+            fi
+          done
+          find $GITHUB_WORKSPACE/android-vroot/data/python/bin -type f -exec chmod 755 {} \;
+          tree -L 3 $GITHUB_WORKSPACE/android-vroot/
+
+      - name: 创建部署包
+        run: |
+          tar -czvf python-3.12.8-android-arm64.tar.gz \
+            --transform 's|^android-vroot/||' \
+            -C $GITHUB_WORKSPACE/android-vroot \
             data
-          
-          echo "打包内容:"
-          tar -tvf ../python-${{ env.PYTHON_VERSION }}-android-arm64.tar.gz | head -20
+          tar -tvf python-3.12.8-android-arm64.tar.gz | head -20
 
-      - name: 上传产物
+      - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
-          name: python-${{ env.PYTHON_VERSION }}-android-arm64
+          name: python-3.12.8-android-arm64
           path: |
-            python-${{ env.PYTHON_VERSION }}-android-arm64.tar.gz
-            cpython/build.log
-            cpython/configure.log
+            python-3.12.8-android-arm64.tar.gz
+            Python-3.12.8.tar.xz
+            zlib-1.3.1.tar.gz
+            xz-5.6.2.tar.gz
+            readline-8.2.tar.gz
+            ncurses-6.5.tar.gz
