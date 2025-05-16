@@ -63,6 +63,23 @@ jobs:
           echo "AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib" >> $GITHUB_ENV
 
+      - name: 检查 NDK 中的 liblzma
+        id: check_liblzma
+        run: |
+          echo "检查 NDK sysroot 中的 lzma.h"
+          LZMA_H=$(find $ANDROID_NDK_ROOT -name lzma.h)
+          echo "检查 NDK sysroot 中的 liblzma"
+          LZMA_LIB=$(find $ANDROID_NDK_ROOT -name liblzma.a -o -name liblzma.so)
+          if [ -n "$LZMA_H" ] && [ -n "$LZMA_LIB" ]; then
+            echo "NDK 提供 liblzma"
+            echo "LZMA_H_PATH=$(dirname $LZMA_H)" >> $GITHUB_ENV
+            echo "LZMA_LIB_PATH=$(dirname $LZMA_LIB)" >> $GITHUB_ENV
+            echo "USE_NDK_LZMA=true" >> $GITHUB_ENV
+          else
+            echo "NDK 未提供 liblzma，将交叉编译 xz"
+            echo "USE_NDK_LZMA=false" >> $GITHUB_ENV
+          fi
+
       - name: 下载 Python 3.12.8 源码
         run: |
           wget https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz
@@ -74,6 +91,38 @@ jobs:
           wget https://zlib.net/zlib-1.3.1.tar.gz
           tar -xzf zlib-1.3.1.tar.gz
 
+      - name: 下载并交叉编译 xz（如果 NDK 未提供 liblzma）
+        if: env.USE_NDK_LZMA == 'false'
+        run: |
+          wget https://tukaani.org/xz/xz-5.6.2.tar.gz
+          tar -xzf xz-5.6.2.tar.gz
+          cd xz-5.6.2
+          ./configure \
+            --host=aarch64-linux-android \
+            --prefix=/data/python \
+            CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
+            CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ \
+            AR=$AR \
+            RANLIB=$RANLIB \
+            --disable-shared \
+            --enable-static
+          make -j$(nproc)
+          make install DESTDIR=../android-vroot
+          cd ..
+          echo "LZMA_H_PATH=/home/runner/work/ips/ips/android-vroot/data/python/include" >> $GITHUB_ENV
+          echo "LZMA_LIB_PATH=/home/runner/work/ips/ips/android-vroot/data/python/lib" >> $GITHUB_ENV
+
+      - name: 构建 zlib
+        run: |
+          cd zlib-1.3.1
+          ./configure \
+            --prefix=/data/python \
+            CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
+            AR=$AR \
+            RANLIB=$RANLIB
+          make -j$(nproc)
+          make install DESTDIR=../android-vroot
+
       - name: 为 Android 配置 Python
         run: |
           cd cpython
@@ -82,7 +131,6 @@ jobs:
           ac_cv_file__dev_ptmx=yes
           ac_cv_file__dev_ptc=no
           EOF
-
           ./configure \
             --host=aarch64-linux-android \
             --build=x86_64-linux-gnu \
@@ -94,44 +142,35 @@ jobs:
             AR=$AR \
             RANLIB=$RANLIB \
             READELF=$READELF \
-            --prefix=/data/python
+            --prefix=/data/python \
+            CFLAGS="-I${LZMA_H_PATH} -I/home/runner/work/ips/ips/android-vroot/data/python/include" \
+            LDFLAGS="-L${LZMA_LIB_PATH} -L/home/runner/work/ips/ips/android-vroot/data/python/lib -llzma"
 
       - name: 构建 Python
         run: |
           cd cpython
           make -j$(nproc)
 
-      - name: 构建 zlib
-        run: |
-          cd zlib-1.3.1
-          ./configure --prefix=/data/python
-          make -j$(nproc)
-
       - name: 创建虚拟 Android 文件系统
         run: |
-          # 创建虚拟 Android 根目录
           mkdir -p android-vroot/data
-
-          # 安装 Python 到虚拟 /data/python
           cd cpython
           make install DESTDIR=../android-vroot
-
-          # 安装 zlib 到相同位置
           cd ../zlib-1.3.1
           make install DESTDIR=../android-vroot
+          if [ "${{ env.USE_NDK_LZMA }}" == "false" ]; then
+            cd ../xz-5.6.2
+            make install DESTDIR=../android-vroot
+          fi
 
       - name: 修复路径和权限
         run: |
-          # 修复 shebang 行
           find android-vroot/data/python/bin -type f -exec grep -l '^#!' {} \; | while read -r file; do
             sed -i "1s|.*|#!/data/python/bin/python3|" "$file"
           done
-
-          # 修复符号链接为绝对路径
           find android-vroot/data/python -type l | while read -r link; do
             target=$(readlink "$link")
             if [[ "$target" != /* ]]; then
-              # 将相对路径转换为绝对路径
               link_dir=$(dirname "$link")
               abs_target=$(realpath -m "$link_dir/$target")
               new_target="/data/python/${abs_target#*/data/python/}"
@@ -139,22 +178,15 @@ jobs:
               ln -s "$new_target" "$link"
             fi
           done
-
-          # 设置可执行权限
           find android-vroot/data/python/bin -type f -exec chmod 755 {} \;
-
-          # 验证目录结构
           tree -L 3 android-vroot/
 
       - name: 创建部署包
         run: |
-          # 创建包含正确 Android 路径的 tarball
           tar -czvf python-3.12.8-android-arm64.tar.gz \
             --transform 's|^android-vroot/||' \
             -C android-vroot \
             data
-
-          # 显示包内容
           tar -tvf python-3.12.8-android-arm64.tar.gz | head -20
 
       - name: 上传构建产物
@@ -165,3 +197,4 @@ jobs:
             python-3.12.8-android-arm64.tar.gz
             Python-3.12.8.tar.xz
             zlib-1.3.1.tar.gz
+            xz-5.6.2.tar.gz
