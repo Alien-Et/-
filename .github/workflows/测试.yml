@@ -107,10 +107,10 @@ jobs:
             --disable-shared \
             --enable-static
           make -j$(nproc)
-          make install DESTDIR=../android-vroot
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ..
-          echo "LZMA_H_PATH=/home/runner/work/ips/ips/android-vroot/data/python/include" >> $GITHUB_ENV
-          echo "LZMA_LIB_PATH=/home/runner/work/ips/ips/android-vroot/data/python/lib" >> $GITHUB_ENV
+          echo "LZMA_H_PATH=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
+          echo "LZMA_LIB_PATH=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
 
       - name: 构建 zlib
         run: |
@@ -121,7 +121,7 @@ jobs:
             AR=$AR \
             RANLIB=$RANLIB
           make -j$(nproc)
-          make install DESTDIR=../android-vroot
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
 
       - name: 为 Android 配置 Python
         run: |
@@ -143,8 +143,8 @@ jobs:
             RANLIB=$RANLIB \
             READELF=$READELF \
             --prefix=/data/python \
-            CFLAGS="-I${LZMA_H_PATH} -I/home/runner/work/ips/ips/android-vroot/data/python/include" \
-            LDFLAGS="-L${LZMA_LIB_PATH} -L/home/runner/work/ips/ips/android-vroot/data/python/lib -llzma"
+            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include" \
+            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma"
 
       - name: 构建 Python
         run: |
@@ -153,22 +153,22 @@ jobs:
 
       - name: 创建虚拟 Android 文件系统
         run: |
-          mkdir -p android-vroot/data
+          mkdir -p $GITHUB_WORKSPACE/android-vroot/data
           cd cpython
-          make install DESTDIR=../android-vroot
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ../zlib-1.3.1
-          make install DESTDIR=../android-vroot
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           if [ "${{ env.USE_NDK_LZMA }}" == "false" ]; then
             cd ../xz-5.6.2
-            make install DESTDIR=../android-vroot
+            make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           fi
 
       - name: 修复路径和权限
         run: |
-          find android-vroot/data/python/bin -type f -exec grep -l '^#!' {} \; | while read -r file; do
+          find $GITHUB_WORKSPACE/android-vroot/data/python/bin -type f -exec grep -l '^#!' {} \; | while read -r file; do
             sed -i "1s|.*|#!/data/python/bin/python3|" "$file"
           done
-          find android-vroot/data/python -type l | while read -r link; do
+          find $GITHUB_WORKSPACE/android-vroot/data/python -type l | while read -r link; do
             target=$(readlink "$link")
             if [[ "$target" != /* ]]; then
               link_dir=$(dirname "$link")
@@ -178,14 +178,14 @@ jobs:
               ln -s "$new_target" "$link"
             fi
           done
-          find android-vroot/data/python/bin -type f -exec chmod 755 {} \;
-          tree -L 3 android-vroot/
+          find $GITHUB_WORKSPACE/android-vroot/data/python/bin -type f -exec chmod 755 {} \;
+          tree -L 3 $GITHUB_WORKSPACE/android-vroot/
 
       - name: 创建部署包
         run: |
           tar -czvf python-3.12.8-android-arm64.tar.gz \
             --transform 's|^android-vroot/||' \
-            -C android-vroot \
+            -C $GITHUB_WORKSPACE/android-vroot \
             data
           tar -tvf python-3.12.8-android-arm64.tar.gz | head -20
 
