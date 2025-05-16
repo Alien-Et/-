@@ -255,6 +255,9 @@ jobs:
           ac_cv_func_getgrent=no
           ac_cv_func_setgrent=no
           ac_cv_func_endgrent=no
+          ac_cv_func_getpwent=no
+          ac_cv_func_setpwent=no
+          ac_cv_func_endpwent=no
           EOF
           echo "验证 CONFIG_SITE 内容"
           cat $CONFIG_SITE
@@ -270,6 +273,7 @@ jobs:
           fi
           echo "检查 ncurses 库"
           ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncursesw.a
+          echo "运行 configure"
           ./configure \
             --host=aarch64-linux-android \
             --build=x86_64-linux-gnu \
@@ -284,9 +288,9 @@ jobs:
             --prefix=/data/python \
             CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID" \
             LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncursesw -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld" \
-            > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
-          echo "检查 configure 日志中 grp 相关配置"
-          grep -E "checking for.*(getgrent|setgrent|endgrent)" configure.log
+            2>&1 | tee configure.log || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
+          echo "检查 configure 日志中 grp 和 pwd 相关配置"
+          grep -E "checking for.*(getgrent|setgrent|endgrent|getpwent|setpwent|endpwent)" configure.log || echo "无相关配置日志"
 
       - name: 上传 config.log（如果配置失败）
         if: failure()
