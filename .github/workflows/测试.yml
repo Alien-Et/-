@@ -215,7 +215,7 @@ jobs:
           # 测试链接
           echo "#include <mpdecimal.h>" > test_mpdec.c
           echo "int main() { mpd_context_t ctx; mpd_init(&ctx, 38); return 0; }" >> test_mpdec.c
-          $CC -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lmpdec -o test_mpdec test_mpdec.c > test_mpdec.log 2>&1 || { echo "mpdecimal 链接测试失败"; cat test_mpdec.log; exit 1; }
+          $CC -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lmpdec -lm -o test_mpdec test_mpdec.c > test_mpdec.log 2>&1 || { echo "mpdecimal 链接测试失败"; cat test_mpdec.log; exit 1; }
           cd ..
 
       - name: 下载并交叉编译 xz
