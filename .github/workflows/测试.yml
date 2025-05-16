@@ -1,4 +1,3 @@
-
 name: 测试
 
 on:
@@ -70,11 +69,10 @@ jobs:
           tar -xf Python-3.12.8.tar.xz
           mv Python-3.12.8 cpython
 
-    - name: Download zlib source
-      run: |
-        wget https://zlib.net/zlib-1.2.13.tar.gz
-        tar -xzf zlib-1.2.13.tar.gz
-
+      - name: Download zlib source
+        run: |
+          wget https://zlib.net/zlib-1.2.13.tar.gz
+          tar -xzf zlib-1.2.13.tar.gz
 
       - name: Configure Python for Android
         run: |
