@@ -127,6 +127,7 @@ jobs:
           export AR=$AR
           export RANLIB=$RANLIB
           export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+          echo "运行 ncurses configure"
           ./configure \
             --host=aarch64-linux-android \
             --prefix=/data/python \
@@ -138,21 +139,40 @@ jobs:
             --without-manpages \
             --without-progs \
             --without-tests \
+            --with-terminfo-dirs=/data/python/share/terminfo \
+            --with-ticlib=no \
+            --with-termlib=no \
+            --with-termcap \
             CFLAGS="--sysroot=$SYSROOT -DANDROID" \
-            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
-          make -j$(nproc) || { echo "make 失败"; cat config.log; exit 1; }
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+            LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld" \
+            > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; exit 1; }
+          echo "ncurses configure 完成，查看 config.log"
+          grep -i "error" config.log || echo "config.log 无错误"
+          echo "运行 make"
+          make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; cat config.log; exit 1; }
+          echo "检查生成的库"
+          find . -name "libncurses.a"
+          echo "运行 make install"
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
           echo "检查安装的 ncurses 库"
           find $GITHUB_WORKSPACE/android-vroot -name "libncurses.a"
           mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/lib
-          if [ -f "$GITHUB_WORKSPACE/android-vroot/usr/lib/libncurses.a" ]; then
-            echo "移动 libncurses.a 到正确路径"
-            mv $GITHUB_WORKSPACE/android-vroot/usr/lib/libncurses.a $GITHUB_WORKSPACE/android-vroot/data/python/lib/
-          fi
+          for path in \
+            "$GITHUB_WORKSPACE/android-vroot/usr/lib/libncurses.a" \
+            "$GITHUB_WORKSPACE/android-vroot/data/python/lib64/libncurses.a" \
+            "$GITHUB_WORKSPACE/android-vroot/lib/libncurses.a"; do
+            if [ -f "$path" ]; then
+              echo "移动 libncurses.a 从 $path 到正确路径"
+              mv "$path" $GITHUB_WORKSPACE/android-vroot/data/python/lib/
+            fi
+          done
           if [ -f "$GITHUB_WORKSPACE/android-vroot/data/python/lib/libncurses.a" ]; then
             echo "libncurses.a 安装成功"
+            ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncurses.a
           else
             echo "错误: libncurses.a 未找到"
+            echo "检查所有可能的库路径"
+            find $GITHUB_WORKSPACE/android-vroot -name "*.a"
             exit 1
           fi
           cd ..
@@ -186,7 +206,7 @@ jobs:
           export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
           export AR=$AR
           export RANLIB=$RANLIB
-          export SYSROOT=$ANDROID_NDK_ROOT/toolchainsllvm/prebuilt/linux-x86_64/sysroot
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
           ./configure \
             --prefix=/data/python \
             --static \
@@ -242,6 +262,8 @@ jobs:
             echo "错误: SYSROOT 路径不存在"
             exit 1
           fi
+          echo "检查 ncurses 库"
+          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libncurses.a
           ./configure \
             --host=aarch64-linux-android \
             --build=x86_64-linux-gnu \
@@ -255,14 +277,20 @@ jobs:
             READELF=$READELF \
             --prefix=/data/python \
             CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID" \
-            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld"
+            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld" \
+            > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; cat config.log; exit 1; }
 
       - name: 上传 config.log（如果配置失败）
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: config-log
-          path: cpython/config.log
+          path: |
+            cpython/config.log
+            ncurses-6.5/config.log
+            ncurses-6.5/configure.log
+            ncurses-6.5/make.log
+            ncurses-6.5/install.log
 
       - name: 构建 Python
         run: |
@@ -271,7 +299,7 @@ jobs:
 
       - name: 创建虚拟 Android 文件系统
         run: |
-          mkdir -p $GITHUB_WORKSPACE/andriod-vroot/data
+          mkdir -p $GITHUB_WORKSPACE/android-vroot/data
           cd cpython
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ../zlib-1.3.1
