@@ -1,4 +1,4 @@
-name: Build Python 3.12.10 for Android
+name: Build Python 3.12.10 for Android (Termux Style)
 
 on:
   push:
@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: 检出代码
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: 安装构建依赖
+      - name: Install build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -21,162 +21,160 @@ jobs:
             libreadline-dev libsqlite3-dev libexpat-dev wget curl llvm \
             libncurses5-dev libncursesw5-dev xz-utils tk-dev libxml2-dev \
             libxmlsec1-dev liblzma-dev git tar python3 python3-pip unzip \
-            binutils tree patchelf perl libtext-template-perl
-          perl -MText::Template -e 'print "Text::Template OK\n"' || { echo "Text::Template 安装失败"; exit 1; }
+            binutils tree patchelf perl libtext-template-perl pkg-config
+          perl -MText::Template -e 'print "Text::Template OK\n"' || exit 1
 
-      - name: 设置 Android NDK (r27b)
+      - name: Setup Android NDK (r27b)
         uses: android-actions/setup-android@v2
         with:
           ndk-version: "27.2.12479018"
 
-      - name: 验证 NDK 安装
+      - name: Verify NDK and Perl
         run: |
-          echo "Android NDK 根目录: $ANDROID_NDK_ROOT"
+          echo "Android NDK: $ANDROID_NDK_ROOT"
           ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/
           $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang --version
-          perl -v
-          perl -MText::Template -e 'print "Text::Template OK\n"' || { echo "Text::Template 不可用"; exit 1; }
+          perl -MText::Template -e 'print "Text::Template OK\n"' || exit 1
 
-      - name: 配置交叉编译工具
+      - name: Setup cross-compile tools
         run: |
           export READELF=$(which readelf)
           echo "READELF=$READELF" >> $GITHUB_ENV
           echo "AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
           echo "PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH" >> $GITHUB_ENV
-          echo "CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang" >> $GITHUB_ENV
-          echo "CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++" >> $GITHUB_ENV
-          echo "LD=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/ld" >> $GITHUB_ENV
+          echo "SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot" >> $GITHUB_ENV
 
-      - name: 清理构建目录
+      - name: Prepare build directory
         run: |
-          rm -rf $GITHUB_WORKSPACE/android-vroot
-          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python
-          echo "构建目录已清理"
+          rm -rf $GITHUB_WORKSPACE/android-python
+          mkdir -p $GITHUB_WORKSPACE/android-python/prefix
+          echo "PYTHON_PREFIX=/data/python" >> $GITHUB_ENV
+          echo "BUILD_DIR=$GITHUB_WORKSPACE/android-python" >> $GITHUB_ENV
 
-      - name: 下载 Python 3.12.10 源码
+      - name: Download Python 3.12.10
         run: |
           wget https://www.python.org/ftp/python/3.12.10/Python-3.12.10.tar.xz
           echo "07ab697474595e06f06647417d3c7fa97ded07afc1a7e4454c5639919b46eaea Python-3.12.10.tar.xz" | sha256sum -c -
           tar -xf Python-3.12.10.tar.xz
           mv Python-3.12.10 cpython
 
-      - name: 下载并应用 Termux 补丁
+      - name: Apply Termux patches
         run: |
           mkdir -p patches
-          for patch in \
-            0001-Configure-android.patch \
-            0002-Fix-fcntl-on-android.patch \
-            0003-Fix-socket-on-android.patch \
-            0004-Fix-termios-on-android.patch \
-            0005-Disable-broken-tests.patch \
-            0006-Fix-posix-module.patch \
-            0007-Fix-sysconfig.patch \
-            0008-Fix-ctypes.patch \
-            0009-Fix-multiprocessing.patch \
-            0010-Fix-ssl.patch; do
-            wget "https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/$patch" -O "patches/$patch" || echo "补丁 $patch 未找到"
-          done
+          # Core Android fixes
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0001-Configure-android.patch -O patches/0001-android-configure.patch
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0002-Fix-fcntl-on-android.patch -O patches/0002-fcntl-fix.patch
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0003-Fix-socket-on-android.patch -O patches/0003-socket-fix.patch
           
+          # Module-specific fixes
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0004-Fix-termios-on-android.patch -O patches/0004-termios-fix.patch
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0005-Disable-broken-tests.patch -O patches/0005-disable-tests.patch
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0006-Fix-posix-module.patch -O patches/0006-posix-fix.patch
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0007-Fix-sysconfig.patch -O patches/0007-sysconfig-fix.patch
+          
+          # Library integration fixes
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0008-Fix-ctypes.patch -O patches/0008-ctypes-fix.patch
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0009-Fix-multiprocessing.patch -O patches/0009-multiprocessing-fix.patch
+          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0010-Fix-ssl.patch -O patches/0010-ssl-fix.patch
+
           cd cpython
           for patch in ../patches/*.patch; do
-            if [ -f "$patch" ]; then
-              patch -p1 < "$patch" || { echo "应用补丁 $patch 失败"; exit 1; }
-            fi
+            patch -p1 < "$patch" || { echo "Failed to apply $patch"; exit 1; }
           done
 
-      - name: 构建必要依赖库
+      - name: Build static libraries
         run: |
-          mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/{lib,include}
-          
-          # 构建 OpenSSL
+          export CC="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+          export CXX="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++"
+          export AR="$AR"
+          export RANLIB="$RANLIB"
+          export LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
+          export CFLAGS="--sysroot=$SYSROOT -O3 -fPIC"
+
+          # Build zlib
+          wget https://zlib.net/zlib-1.3.1.tar.gz
+          tar -xzf zlib-1.3.1.tar.gz
+          cd zlib-1.3.1
+          ./configure --prefix=$PYTHON_PREFIX --static
+          make -j$(nproc)
+          make install DESTDIR=$BUILD_DIR
+          cd ..
+
+          # Build OpenSSL
           wget https://www.openssl.org/source/openssl-3.3.2.tar.gz
           tar -xzf openssl-3.3.2.tar.gz
           cd openssl-3.3.2
-          ./Configure android-arm64 -D__ANDROID_API__=24 no-shared --prefix=/data/python
+          ./Configure android-arm64 -D__ANDROID_API__=24 no-shared --prefix=$PYTHON_PREFIX
           make -j$(nproc)
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          make install_sw DESTDIR=$BUILD_DIR
           cd ..
-          
-          # 构建 SQLite
+
+          # Build SQLite
           wget https://www.sqlite.org/2024/sqlite-autoconf-3460000.tar.gz
           tar -xzf sqlite-autoconf-3460000.tar.gz
           cd sqlite-autoconf-3460000
-          ./configure --host=aarch64-linux-android --prefix=/data/python --disable-shared
+          ./configure --host=aarch64-linux-android --prefix=$PYTHON_PREFIX --disable-shared
           make -j$(nproc)
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          make install DESTDIR=$BUILD_DIR
           cd ..
-          
-          # 构建 libffi
+
+          # Build libffi
           wget https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz
           tar -xzf libffi-3.4.6.tar.gz
           cd libffi-3.4.6
-          ./configure --host=aarch64-linux-android --prefix=/data/python --disable-shared
+          ./configure --host=aarch64-linux-android --prefix=$PYTHON_PREFIX --disable-shared
           make -j$(nproc)
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          make install DESTDIR=$BUILD_DIR
           cd ..
 
-      - name: 配置 Python 构建
+      - name: Configure Python for Android
         run: |
           cd cpython
-          export CONFIG_SITE=config.site
-          export MACHDEP=android
-          
-          cat <<EOF > $CONFIG_SITE
+          export CC="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+          export CXX="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++"
+          export AR="$AR"
+          export RANLIB="$RANLIB"
+          export LDFLAGS="-L$BUILD_DIR$PYTHON_PREFIX/lib --sysroot=$SYSROOT -fuse-ld=lld"
+          export CFLAGS="-I$BUILD_DIR$PYTHON_PREFIX/include --sysroot=$SYSROOT -O3 -fPIC"
+
+          # Create config.site with Termux-specific settings
+          cat > config.site << 'EOF'
           ac_cv_file__dev_ptmx=yes
           ac_cv_file__dev_ptc=no
           ac_cv_func_shm_open=yes
           ac_cv_working_tzset=yes
-          ac_cv_func_getgrent=no
-          ac_cv_func_setgrent=no
-          ac_cv_func_endgrent=no
-          ac_cv_func_getpwent=no
-          ac_cv_func_setpwent=no
-          ac_cv_func_endpwent=no
           ac_cv_func_fork=no
           ac_cv_func_forkpty=no
           ac_cv_func_openpty=no
           ac_cv_func_spawn=no
           ac_cv_func_posix_spawn=no
+          ac_cv_func_gethostbyname=no
+          ac_cv_func_gethostbyaddr=no
+          ac_cv_func_epoll=no
+          ac_cv_func_epoll_create1=no
           ac_cv_func_getentropy=no
-          ac_cv_func_clock_settime=no
           EOF
-          
-          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
-          
-          # 测试编译器
-          echo "测试编译器是否工作..."
-          $CC --version || { echo "编译器测试失败"; exit 1; }
-          $CC -v || { echo "编译器详细测试失败"; exit 1; }
-          
+
           ./configure \
             --host=aarch64-linux-android \
             --build=x86_64-linux-gnu \
-            --prefix=/data/python \
+            --prefix=$PYTHON_PREFIX \
             --disable-ipv6 \
             --with-build-python=$(which python3) \
-            --enable-loadable-sqlite-extensions \
+            --with-system-ffi \
             --enable-optimizations \
             --with-lto=thin \
+            --with-ensurepip=install \
             --without-ensurepip \
-            --without-pymalloc \
             --disable-test-modules \
-            CC="$CC" \
-            CXX="$CXX" \
-            AR="$AR" \
-            RANLIB="$RANLIB" \
-            READELF="$READELF" \
-            LD="$LD" \
-            CFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include -O3 -fPIC --sysroot=$SYSROOT" \
-            CPPFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include" \
-            LDFLAGS="-L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lssl -lcrypto -lsqlite3 -lffi -ldl -lm --sysroot=$SYSROOT -fuse-ld=lld" \
-            > configure.log 2>&1 || { echo "configure 失败"; cat configure.log; exit 1; }
+            --without-pymalloc \
+            CONFIG_SITE=config.site
 
-      - name: 配置 Modules/Setup.local
+      - name: Customize Modules/Setup
         run: |
           cd cpython
-          cat <<EOF > Modules/Setup.local
+          cat > Modules/Setup.local << 'EOF'
           *disabled*
           _tkinter
           _gdbm
@@ -185,55 +183,56 @@ jobs:
           spwd
           
           *shared*
-          zlib zlibmodule.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lz
-          _ssl _ssl.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lssl -lcrypto
-          _hashlib _hashlib.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lssl -lcrypto
-          _sqlite3 _sqlite3.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lsqlite3
-          _ctypes _ctypes.c -I$GITHUB_WORKSPACE/android-vroot/data/python/include -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lffi
+          zlib zlibmodule.c -I$(BUILD_DIR)$(PYTHON_PREFIX)/include -L$(BUILD_DIR)$(PYTHON_PREFIX)/lib -lz
+          _ssl _ssl.c -I$(BUILD_DIR)$(PYTHON_PREFIX)/include -L$(BUILD_DIR)$(PYTHON_PREFIX)/lib -lssl -lcrypto
+          _hashlib _hashlib.c -I$(BUILD_DIR)$(PYTHON_PREFIX)/include -L$(BUILD_DIR)$(PYTHON_PREFIX)/lib -lssl -lcrypto
+          _sqlite3 _sqlite3.c -I$(BUILD_DIR)$(PYTHON_PREFIX)/include -L$(BUILD_DIR)$(PYTHON_PREFIX)/lib -lsqlite3
+          _ctypes _ctypes.c -I$(BUILD_DIR)$(PYTHON_PREFIX)/include -L$(BUILD_DIR)$(PYTHON_PREFIX)/lib -lffi
           EOF
 
-      - name: 构建 Python
+      - name: Build Python
         run: |
           cd cpython
-          make -j$(nproc) > make.log 2>&1 || { echo "make 失败"; cat make.log; exit 1; }
+          make -j$(nproc)
 
-      - name: 安装 Python
+      - name: Install Python
         run: |
           cd cpython
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot > install.log 2>&1 || { echo "make install 失败"; cat install.log; exit 1; }
+          make install DESTDIR=$BUILD_DIR
 
-      - name: 精简安装
+      - name: Verify installation
         run: |
-          cd $GITHUB_WORKSPACE/android-vroot/data/python
-          rm -rf share/man share/doc
-          find . -name "__pycache__" -type d -exec rm -rf {} +
-          find . -name "*.pyc" -delete
-          find . -name "*.pyo" -delete
+          $BUILD_DIR$PYTHON_PREFIX/bin/python3 -c "import sys; print(sys.platform)"
+          $BUILD_DIR$PYTHON_PREFIX/bin/python3 -c "import ssl; print(ssl.OPENSSL_VERSION)"
+          $BUILD_DIR$PYTHON_PREFIX/bin/python3 -c "import sqlite3; print(sqlite3.sqlite_version)"
+          $BUILD_DIR$PYTHON_PREFIX/bin/python3 -c "import zlib; print(zlib.ZLIB_VERSION)"
 
-      - name: 创建部署包
+      - name: Create final package
         run: |
-          tar -czvf python-3.12.10-android-arm64.tar.gz \
-            --transform 's|^android-vroot/||' \
-            -C $GITHUB_WORKSPACE/android-vroot \
-            data
-          tar -tvf python-3.12.10-android-arm64.tar.gz | head -20
+          cd $BUILD_DIR
+          # Remove unnecessary files
+          rm -rf data/python/share/man
+          find data/python -name "__pycache__" -exec rm -rf {} +
+          find data/python -name "*.pyc" -delete
+          find data/python -name "*.pyo" -delete
+          
+          # Create tarball
+          tar -czvf python-3.12.10-android-arm64.tar.gz data
+          tar -tvf python-3.12.10-android-arm64.tar.gz | head
 
-      - name: 上传构建产物
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: python-3.12.10-android-arm64
-          path: python-3.12.10-android-arm64.tar.gz
+          path: ${{ github.workspace }}/android-python/python-3.12.10-android-arm64.tar.gz
 
-      - name: 上传日志文件
+      - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-logs
           path: |
             cpython/config.log
-            cpython/configure.log
-            cpython/make.log
-            cpython/install.log
-            openssl-3.3.2/config.log
-            sqlite-autoconf-3460000/config.log
-            libffi-3.4.6/config.log
+            cpython/Makefile
+            */config.log
+            */Makefile
