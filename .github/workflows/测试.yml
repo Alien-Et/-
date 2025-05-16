@@ -144,6 +144,23 @@ jobs:
           make -j$(nproc)
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
 
+      - name: 测试交叉编译器
+        run: |
+          echo "int main() { return 0; }" > test.c
+          $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
+            --sysroot=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot \
+            -o test test.c
+          file test
+
+      - name: 检查依赖库
+        run: |
+          echo "检查 liblzma"
+          ls -l ${LZMA_LIB_PATH}/liblzma.a
+          echo "检查 readline"
+          ls -l ${READLINE_LIB}/libreadline.a
+          echo "检查 zlib"
+          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libz.a
+
       - name: 为 Android 配置 Python
         run: |
           cd cpython
@@ -152,6 +169,7 @@ jobs:
           ac_cv_file__dev_ptmx=yes
           ac_cv_file__dev_ptc=no
           EOF
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
           ./configure \
             --host=aarch64-linux-android \
             --build=x86_64-linux-gnu \
@@ -164,8 +182,15 @@ jobs:
             RANLIB=$RANLIB \
             READELF=$READELF \
             --prefix=/data/python \
-            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE}" \
-            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses"
+            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT" \
+            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses -lc --sysroot=$SYSROOT"
+
+      - name: 上传 config.log（如果配置失败）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: config-log
+          path: cpython/config.log
 
       - name: 构建 Python
         run: |
