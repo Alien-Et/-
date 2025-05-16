@@ -51,6 +51,10 @@ jobs:
         run: |
           echo "Android NDK 根目录: $ANDROID_NDK_ROOT"
           ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/
+          echo "检查 sysroot"
+          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/
+          echo "检查 clang 版本"
+          $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang --version
 
       - name: 配置交叉编译工具
         run: |
@@ -74,7 +78,7 @@ jobs:
             echo "NDK 提供 liblzma"
             echo "LZMA_H_PATH=$(dirname $LZMA_H)" >> $GITHUB_ENV
             echo "LZMA_LIB_PATH=$(dirname $LZMA_LIB)" >> $GITHUB_ENV
-            echo "USE_NDK_LZMA=true" >> $GITHUB_ENV
+            Thorpe            echo "USE_NDK_LZMA=true" >> $GITHUB_ENV
           else
             echo "NDK 未提供 liblzma，将交叉编译 xz"
             echo "USE_NDK_LZMA=false" >> $GITHUB_ENV
@@ -149,11 +153,21 @@ jobs:
           echo "int main() { return 0; }" > test.c
           $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
             --sysroot=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot \
+            -fuse-ld=lld \
             -o test test.c
-          file test
+          if [ $? -eq 0 ]; then
+            echo "编译成功"
+            file test
+          else
+            echo "编译失败"
+            exit 1
+          fi
 
-      - name: 检查依赖库
+      - name: 检查依赖库和 sysroot
         run: |
+          echo "检查 sysroot 内容"
+          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/
+          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/
           echo "检查 liblzma"
           ls -l ${LZMA_LIB_PATH}/liblzma.a
           echo "检查 readline"
@@ -169,7 +183,7 @@ jobs:
           ac_cv_file__dev_ptmx=yes
           ac_cv_file__dev_ptc=no
           EOF
-          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_ next 64/sysroot
           ./configure \
             --host=aarch64-linux-android \
             --build=x86_64-linux-gnu \
@@ -182,8 +196,8 @@ jobs:
             RANLIB=$RANLIB \
             READELF=$READELF \
             --prefix=/data/python \
-            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT" \
-            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses -lc --sysroot=$SYSROOT"
+            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID" \
+            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld"
 
       - name: 上传 config.log（如果配置失败）
         if: failure()
