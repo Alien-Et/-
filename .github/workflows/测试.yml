@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout code
+      - name: 检出代码
         uses: actions/checkout@v3
 
-      - name: Install build dependencies
+      - name: 安装构建依赖
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -42,17 +42,17 @@ jobs:
             binutils \
             tree
 
-      - name: Setup Android NDK (r27b)
+      - name: 设置 Android NDK (r27b)
         uses: android-actions/setup-android@v2
         with:
           ndk-version: "27.2.12479018"
 
-      - name: Verify NDK installation
+      - name: 验证 NDK 安装
         run: |
-          echo "Android NDK root: $ANDROID_NDK_ROOT"
+          echo "Android NDK 根目录: $ANDROID_NDK_ROOT"
           ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/
 
-      - name: Configure cross-compilation tools
+      - name: 配置交叉编译工具
         run: |
           export READELF=$(which readelf)
           if [ ! -f "$READELF" ]; then
@@ -63,18 +63,18 @@ jobs:
           echo "AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib" >> $GITHUB_ENV
 
-      - name: Download Python 3.12.8 source
+      - name: 下载 Python 3.12.8 源码
         run: |
           wget https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz
           tar -xf Python-3.12.8.tar.xz
           mv Python-3.12.8 cpython
 
-      - name: Download zlib source
+      - name: 下载 zlib 源码
         run: |
-          wget https://zlib.net/zlib-1.2.13.tar.gz
-          tar -xzf zlib-1.2.13.tar.gz
+          wget https://zlib.net/zlib-1.3.1.tar.gz
+          tar -xzf zlib-1.3.1.tar.gz
 
-      - name: Configure Python for Android
+      - name: 为 Android 配置 Python
         run: |
           cd cpython
           export CONFIG_SITE=config.site
@@ -96,42 +96,42 @@ jobs:
             READELF=$READELF \
             --prefix=/data/python
 
-      - name: Build Python
+      - name: 构建 Python
         run: |
           cd cpython
           make -j$(nproc)
 
-      - name: Build zlib
+      - name: 构建 zlib
         run: |
-          cd zlib-1.2.13
+          cd zlib-1.3.1
           ./configure --prefix=/data/python
           make -j$(nproc)
 
-      - name: Create virtual Android filesystem
+      - name: 创建虚拟 Android 文件系统
         run: |
-          # Create virtual Android root
+          # 创建虚拟 Android 根目录
           mkdir -p android-vroot/data
 
-          # Install Python to virtual /data/python
+          # 安装 Python 到虚拟 /data/python
           cd cpython
           make install DESTDIR=../android-vroot
 
-          # Install zlib to the same location
-          cd ../zlib-1.2.13
+          # 安装 zlib 到相同位置
+          cd ../zlib-1.3.1
           make install DESTDIR=../android-vroot
 
-      - name: Fix paths and permissions
+      - name: 修复路径和权限
         run: |
-          # Fix shebang lines
+          # 修复 shebang 行
           find android-vroot/data/python/bin -type f -exec grep -l '^#!' {} \; | while read -r file; do
             sed -i "1s|.*|#!/data/python/bin/python3|" "$file"
           done
 
-          # Fix symlinks to use absolute paths
+          # 修复符号链接为绝对路径
           find android-vroot/data/python -type l | while read -r link; do
             target=$(readlink "$link")
             if [[ "$target" != /* ]]; then
-              # Convert relative to absolute path
+              # 将相对路径转换为绝对路径
               link_dir=$(dirname "$link")
               abs_target=$(realpath -m "$link_dir/$target")
               new_target="/data/python/${abs_target#*/data/python/}"
@@ -140,28 +140,28 @@ jobs:
             fi
           done
 
-          # Set executable permissions
+          # 设置可执行权限
           find android-vroot/data/python/bin -type f -exec chmod 755 {} \;
 
-          # Verify structure
+          # 验证目录结构
           tree -L 3 android-vroot/
 
-      - name: Create deployment package
+      - name: 创建部署包
         run: |
-          # Create tarball with proper Android paths
+          # 创建包含正确 Android 路径的 tarball
           tar -czvf python-3.12.8-android-arm64.tar.gz \
             --transform 's|^android-vroot/||' \
             -C android-vroot \
             data
 
-          # Show package contents
+          # 显示包内容
           tar -tvf python-3.12.8-android-arm64.tar.gz | head -20
 
-      - name: Upload artifact
+      - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
           name: python-3.12.8-android-arm64
           path: |
             python-3.12.8-android-arm64.tar.gz
             Python-3.12.8.tar.xz
-            zlib-1.2.13.tar.gz
+            zlib-1.3.1.tar.gz
