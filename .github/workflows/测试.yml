@@ -1,4 +1,4 @@
-name: 测试
+name: Build Python for Android (aarch64)
 
 on:
   push:
@@ -18,29 +18,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
-            zlib1g-dev \
-            libffi-dev \
-            libssl-dev \
-            libbz2-dev \
-            libreadline-dev \
-            libsqlite3-dev \
             wget \
             curl \
-            llvm \
-            libncurses5-dev \
-            libncursesw5-dev \
-            xz-utils \
-            tk-dev \
-            libxml2-dev \
-            libxmlsec1-dev \
-            liblzma-dev \
             git \
             tar \
+            unzip \
+            tree \
             python3 \
             python3-pip \
-            unzip \
-            binutils \
-            tree
+            pkg-config \
+            autoconf \
+            automake \
+            libtool \
+            texinfo
 
       - name: 设置 Android NDK (r27b)
         uses: android-actions/setup-android@v2
@@ -66,6 +56,9 @@ jobs:
           echo "READELF=$READELF" >> $GITHUB_ENV
           echo "AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib" >> $GITHUB_ENV
+          echo "CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang" >> $GITHUB_ENV
+          echo "CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++" >> $GITHUB_ENV
+          echo "SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot" >> $GITHUB_ENV
 
       - name: 检查 NDK 中的 liblzma
         id: check_liblzma
@@ -95,6 +88,54 @@ jobs:
           wget https://zlib.net/zlib-1.3.1.tar.gz
           tar -xzf zlib-1.3.1.tar.gz
 
+      - name: 下载并交叉编译 ncurses
+        run: |
+          wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.4.tar.gz
+          tar -xzf ncurses-6.4.tar.gz
+          cd ncurses-6.4
+          ./configure \
+            --host=aarch64-linux-android \
+            --prefix=/data/python \
+            --without-shared \
+            --enable-static \
+            --without-debug \
+            --without-ada \
+            --without-manpages \
+            --disable-db-install \
+            --without-tests \
+            --with-termlib \
+            CC=$CC \
+            AR=$AR \
+            RANLIB=$RANLIB \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID"
+          make -j$(nproc)
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          cd ..
+          echo "NCURSES_INCLUDE=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
+          echo "NCURSES_LIB=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
+
+      - name: 下载并交叉编译 readline
+        run: |
+          wget https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz
+          tar -xzf readline-8.2.tar.gz
+          cd readline-8.2
+          ./configure \
+            --host=aarch64-linux-android \
+            --prefix=/data/python \
+            --disable-shared \
+            --enable-static \
+            bash_cv_wcwidth_broken=no \
+            CC=$CC \
+            AR=$AR \
+            RANLIB=$RANLIB \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID -I${NCURSES_INCLUDE}" \
+            LDFLAGS="-L${NCURSES_LIB}"
+          make -j$(nproc)
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          cd ..
+          echo "READLINE_INCLUDE=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
+          echo "READLINE_LIB=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
+
       - name: 下载并交叉编译 xz（如果 NDK 未提供 liblzma）
         if: env.USE_NDK_LZMA == 'false'
         run: |
@@ -104,76 +145,45 @@ jobs:
           ./configure \
             --host=aarch64-linux-android \
             --prefix=/data/python \
-            CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
-            CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ \
+            --disable-shared \
+            --enable-static \
+            CC=$CC \
+            CXX=$CXX \
             AR=$AR \
             RANLIB=$RANLIB \
-            --disable-shared \
-            --enable-static
+            CFLAGS="--sysroot=$SYSROOT -DANDROID"
           make -j$(nproc)
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ..
           echo "LZMA_H_PATH=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
           echo "LZMA_LIB_PATH=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
 
-      - name: 下载并交叉编译 readline
-        run: |
-          wget https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz
-          tar -xzf readline-8.2.tar.gz
-          cd readline-8.2
-          export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
-          export AR=$AR
-          export RANLIB=$RANLIB
-          ./configure \
-            --host=aarch64-linux-android \
-            --prefix=/data/python \
-            --disable-shared \
-            --enable-static \
-            bash_cv_wcwidth_broken=no
-          make -j$(nproc)
-          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
-          cd ..
-          echo "READLINE_INCLUDE=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
-          echo "READLINE_LIB=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
-
       - name: 构建 zlib
         run: |
           cd zlib-1.3.1
-          export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
-          export AR=$AR
-          export RANLIB=$RANLIB
+          CC=$CC \
+          AR=$AR \
+          RANLIB=$RANLIB \
           ./configure \
             --prefix=/data/python \
             --static
           make -j$(nproc)
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          echo "ZLIB_INCLUDE=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
+          echo "ZLIB_LIB=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
 
-      - name: 测试交叉编译器
+      - name: 检查所有依赖库
         run: |
-          echo "int main() { return 0; }" > test.c
-          $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
-            --sysroot=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot \
-            -fuse-ld=lld \
-            -o test test.c
-          if [ $? -eq 0 ]; then
-            echo "编译成功"
-            file test
-          else
-            echo "编译失败"
-            exit 1
-          fi
-
-      - name: 检查依赖库和 sysroot
-        run: |
-          echo "检查 sysroot 内容"
-          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/
-          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/
-          echo "检查 liblzma"
-          ls -l ${LZMA_LIB_PATH}/liblzma.a
-          echo "检查 readline"
+          echo "检查 ncurses 库"
+          ls -l ${NCURSES_LIB}/libncurses.a
+          echo "检查 readline 库"
           ls -l ${READLINE_LIB}/libreadline.a
-          echo "检查 zlib"
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/lib/libz.a
+          echo "检查 zlib 库"
+          ls -l ${ZLIB_LIB}/libz.a
+          if [ "${{ env.USE_NDK_LZMA }}" == "false" ]; then
+            echo "检查 lzma 库"
+            ls -l ${LZMA_LIB_PATH}/liblzma.a
+          fi
 
       - name: 为 Android 配置 Python
         run: |
@@ -183,30 +193,31 @@ jobs:
           ac_cv_file__dev_ptmx=yes
           ac_cv_file__dev_ptc=no
           EOF
-          export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
-          echo "SYSROOT 路径: $SYSROOT"
-          if [ -d "$SYSROOT" ]; then
-            echo "SYSROOT 路径存在"
-            ls -l $SYSROOT/usr/lib/aarch64-linux-android/
-            ls -l $SYSROOT/usr/include/
-          else
-            echo "错误: SYSROOT  NUOT 路径不存在"
-            exit 1
+          
+          # 准备编译参数
+          COMMON_CFLAGS="-I${ZLIB_INCLUDE} -I${READLINE_INCLUDE} -I${NCURSES_INCLUDE} --sysroot=$SYSROOT -DANDROID"
+          COMMON_LDFLAGS="-L${ZLIB_LIB} -L${READLINE_LIB} -L${NCURSES_LIB} -lreadline -lncurses -lz --sysroot=$SYSROOT -fuse-ld=lld"
+          
+          if [ "${{ env.USE_NDK_LZMA }}" == "false" ]; then
+            COMMON_CFLAGS="-I${LZMA_H_PATH} $COMMON_CFLAGS"
+            COMMON_LDFLAGS="-L${LZMA_LIB_PATH} -llzma $COMMON_LDFLAGS"
           fi
+          
           ./configure \
             --host=aarch64-linux-android \
             --build=x86_64-linux-gnu \
             --disable-ipv6 \
             --enable-optimizations \
             --with-build-python=$(which python3) \
-            CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
-            CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ \
+            CC=$CC \
+            CXX=$CXX \
             AR=$AR \
             RANLIB=$RANLIB \
             READELF=$READELF \
             --prefix=/data/python \
-            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID" \
-            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld"
+            CFLAGS="$COMMON_CFLAGS" \
+            LDFLAGS="$COMMON_LDFLAGS" \
+            --with-ensurepip=no
 
       - name: 上传 config.log（如果配置失败）
         if: failure()
@@ -220,7 +231,7 @@ jobs:
           cd cpython
           make -j$(nproc)
 
-      - name: 创建虚拟 Android 文件系统
+      - name: 安装到虚拟 Android 文件系统
         run: |
           mkdir -p $GITHUB_WORKSPACE/android-vroot/data
           cd cpython
@@ -228,6 +239,8 @@ jobs:
           cd ../zlib-1.3.1
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ../readline-8.2
+          make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
+          cd ../ncurses-6.4
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           if [ "${{ env.USE_NDK_LZMA }}" == "false" ]; then
             cd ../xz-5.6.2
@@ -270,3 +283,4 @@ jobs:
             zlib-1.3.1.tar.gz
             xz-5.6.2.tar.gz
             readline-8.2.tar.gz
+            ncurses-6.4.tar.gz
