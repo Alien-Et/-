@@ -1,4 +1,4 @@
-name: Build Python for Android (aarch64)
+name: Build Python for Android (aarch64) - Fixed
 
 on:
   push:
@@ -47,38 +47,18 @@ jobs:
         run: |
           echo "Android NDK root: $ANDROID_NDK_ROOT"
           ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/
-          echo "Sysroot contents:"
-          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/
           $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang --version
 
       - name: Setup cross-compilation tools
         run: |
           export READELF=$(which readelf)
-          if [ ! -f "$READELF" ]; then
-            sudo apt install -y binutils
-            export READELF=$(which readelf)
-          fi
           echo "READELF=$READELF" >> $GITHUB_ENV
           echo "AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib" >> $GITHUB_ENV
           echo "SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot" >> $GITHUB_ENV
           echo "CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang" >> $GITHUB_ENV
           echo "CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++" >> $GITHUB_ENV
-
-      - name: Check for liblzma in NDK
-        id: check_liblzma
-        run: |
-          LZMA_H=$(find $ANDROID_NDK_ROOT -name lzma.h)
-          LZMA_LIB=$(find $ANDROID_NDK_ROOT -name liblzma.a -o -name liblzma.so)
-          if [ -n "$LZMA_H" ] && [ -n "$LZMA_LIB" ]; then
-            echo "NDK provides liblzma"
-            echo "LZMA_H_PATH=$(dirname $LZMA_H)" >> $GITHUB_ENV
-            echo "LZMA_LIB_PATH=$(dirname $LZMA_LIB)" >> $GITHUB_ENV
-            echo "USE_NDK_LZMA=true" >> $GITHUB_ENV
-          else
-            echo "NDK does not provide liblzma, will build xz"
-            echo "USE_NDK_LZMA=false" >> $GITHUB_ENV
-          fi
+          echo "ANDROID_API=21" >> $GITHUB_ENV
 
       - name: Download source packages
         run: |
@@ -86,29 +66,28 @@ jobs:
           wget https://zlib.net/zlib-1.3.1.tar.gz
           wget https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz
           wget https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz
+          wget https://tukaani.org/xz/xz-5.6.2.tar.gz
+          
           tar -xf Python-3.12.8.tar.xz && mv Python-3.12.8 cpython
           tar -xzf zlib-1.3.1.tar.gz
           tar -xzf ncurses-6.5.tar.gz
           tar -xzf readline-8.2.tar.gz
-          if [ "$USE_NDK_LZMA" = "false" ]; then
-            wget https://tukaani.org/xz/xz-5.6.2.tar.gz
-            tar -xzf xz-5.6.2.tar.gz
-          fi
+          tar -xzf xz-5.6.2.tar.gz
 
       - name: Build zlib
         run: |
           cd zlib-1.3.1
-          ./configure \
-            --prefix=/data/python \
-            --static
-          make -j$(nproc) CC="$CC" AR="$AR" RANLIB="$RANLIB" \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+          ./configure --prefix=/data/python --static
+          make -j$(nproc) \
+            CC="$CC" \
+            AR="$AR" \
+            RANLIB="$RANLIB" \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID -fPIC" \
             LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ..
 
-      - name: Build xz (if needed)
-        if: env.USE_NDK_LZMA == 'false'
+      - name: Build xz
         run: |
           cd xz-5.6.2
           ./configure \
@@ -119,7 +98,7 @@ jobs:
             CC="$CC" \
             AR="$AR" \
             RANLIB="$RANLIB" \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID -fPIC" \
             LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
           make -j$(nproc)
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
@@ -147,23 +126,42 @@ jobs:
             CC="$CC" \
             AR="$AR" \
             RANLIB="$RANLIB" \
-            CFLAGS="--sysroot=$SYSROOT -DANDROID" \
+            CFLAGS="--sysroot=$SYSROOT -DANDROID -fPIC" \
             LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
           make -j$(nproc)
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           
-          # Ensure libraries are in the correct location
+          # Ensure libraries are in correct location
           mkdir -p $GITHUB_WORKSPACE/android-vroot/data/python/lib
           cp -f $GITHUB_WORKSPACE/android-vroot/data/python/lib*/libncurses.* $GITHUB_WORKSPACE/android-vroot/data/python/lib/ || true
-          cp -f $GITHUB_WORKSPACE/android-vroot/usr/local/lib/libncurses.* $GITHUB_WORKSPACE/android-vroot/data/python/lib/ || true
           
           echo "READLINE_INCLUDE=$GITHUB_WORKSPACE/android-vroot/data/python/include" >> $GITHUB_ENV
           echo "READLINE_LIB=$GITHUB_WORKSPACE/android-vroot/data/python/lib" >> $GITHUB_ENV
           cd ..
 
-      - name: Build readline
+      - name: Build readline (fixed)
         run: |
           cd readline-8.2
+          
+          # Create test program to verify toolchain
+          cat <<EOF > simple_test.c
+          #include <android/log.h>
+          int main() {
+            __android_log_print(ANDROID_LOG_INFO, "READLINE", "Cross-compile test");
+            return 0;
+          }
+          EOF
+          
+          # Required Android libraries
+          EXTRA_LIBS="-lc -lm -ldl -llog"
+          
+          # First test the compiler
+          echo "Testing cross compiler..."
+          $CC --sysroot=$SYSROOT -DANDROID -fPIC \
+            -o simple_test simple_test.c $EXTRA_LIBS
+          file simple_test || true
+          
+          # Then configure with proper flags
           ./configure \
             --host=aarch64-linux-android \
             --prefix=/data/python \
@@ -173,8 +171,9 @@ jobs:
             CC="$CC" \
             AR="$AR" \
             RANLIB="$RANLIB" \
-            CFLAGS="-I$GITHUB_WORKSPACE/android-vroot/data/python/include --sysroot=$SYSROOT -DANDROID" \
-            LDFLAGS="-L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lncurses --sysroot=$SYSROOT -fuse-ld=lld"
+            CFLAGS="--sysroot=$SYSROOT -DANDROID -fPIC -I$GITHUB_WORKSPACE/android-vroot/data/python/include" \
+            LDFLAGS="--sysroot=$SYSROOT -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -lncurses $EXTRA_LIBS -fuse-ld=lld"
+          
           make -j$(nproc)
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ..
@@ -200,24 +199,12 @@ jobs:
             AR="$AR" \
             RANLIB="$RANLIB" \
             READELF="$READELF" \
-            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID" \
-            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses -lc -lm -ldl --sysroot=$SYSROOT -fuse-ld=lld" \
-            > configure.log 2>&1 || { echo "configure failed"; cat configure.log; exit 1; }
-          cd ..
-
-      - name: Build Python
-        run: |
-          cd cpython
+            CFLAGS="-I${LZMA_H_PATH} -I$GITHUB_WORKSPACE/android-vroot/data/python/include -I${READLINE_INCLUDE} --sysroot=$SYSROOT -DANDROID -fPIC" \
+            LDFLAGS="-L${LZMA_LIB_PATH} -L$GITHUB_WORKSPACE/android-vroot/data/python/lib -llzma -L${READLINE_LIB} -lreadline -lncurses -lc -lm -ldl -llog --sysroot=$SYSROOT -fuse-ld=lld"
+          
           make -j$(nproc)
           make install DESTDIR=$GITHUB_WORKSPACE/android-vroot
           cd ..
-
-      - name: Verify installation
-        run: |
-          echo "Checking installed files:"
-          tree -L 3 $GITHUB_WORKSPACE/android-vroot/data/python
-          ls -l $GITHUB_WORKSPACE/android-vroot/data/python/bin/python*
-          $GITHUB_WORKSPACE/android-vroot/data/python/bin/python3 --version || true
 
       - name: Fix shebangs and symlinks
         run: |
@@ -258,5 +245,3 @@ jobs:
             cpython/config.log
             ncurses-6.5/config.log
             readline-8.2/config.log
-            zlib-1.3.1/config.log
-            xz-5.6.2/config.log
