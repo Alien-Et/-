@@ -42,9 +42,10 @@ jobs:
             binutils \
             tree \
             patchelf \
-            perl
-          # 安装 Perl 模块
-          cpan install Text::Template
+            perl \
+            libtext-template-perl
+          # 验证 Text::Template 模块
+          perl -MText::Template -e 'print "Text::Template OK\n"' || { echo "Text::Template 安装失败"; exit 1; }
 
       - name: 设置 Android NDK (r27b)
         uses: android-actions/setup-android@v2
