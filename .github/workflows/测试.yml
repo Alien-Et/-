@@ -252,6 +252,7 @@ jobs:
           cat <<EOF > $CONFIG_SITE
           ac_cv_file__dev_ptmx=yes
           ac_cv_file__dev_ptc=no
+          ac_cv_func_getgrent=no
           EOF
           export SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot
           echo "SYSROOT 路径: $SYSROOT"
