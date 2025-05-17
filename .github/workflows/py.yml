@@ -56,12 +56,16 @@ jobs:
           mkdir -p /data/python
           make install
 
+      - name: 创建 artifacts 目录
+        run: mkdir -p artifacts
+
       - name: 打包 Python
         run: |
-          tar -czvf python-android-arm64.tar.gz -C /data python
+          tar -czvf artifacts/python-android-arm64.tar.gz -C /data python
+          ls -lh artifacts/  # 调试：确认文件已生成
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
           name: python-android-arm64
-          path: python-android-arm64.tar.gz
+          path: artifacts/python-android-arm64.tar.gz
