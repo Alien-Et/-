@@ -1,238 +1,53 @@
-name: Build Python 3.12.10 for Android (Termux Style)
+name: Build Python for Termux (Custom Path)
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build:
-    runs-on: ubuntu-24.04
-
+  build-python:
+    runs-on: ubuntu-latest
+    container: termux/package-builder
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential zlib1g-dev libffi-dev libssl-dev libbz2-dev \
-            libreadline-dev libsqlite3-dev libexpat-dev wget curl llvm \
-            libncurses5-dev libncursesw5-dev xz-utils tk-dev libxml2-dev \
-            libxmlsec1-dev liblzma-dev git tar python3 python3-pip unzip \
-            binutils tree patchelf perl libtext-template-perl pkg-config
-          perl -MText::Template -e 'print "Text::Template OK\n"' || exit 1
-
-      - name: Setup Android NDK (r27b)
-        uses: android-actions/setup-android@v2
-        with:
-          ndk-version: "27.2.12479018"
-
-      - name: Verify NDK and Perl
-        run: |
-          echo "Android NDK: $ANDROID_NDK_ROOT"
-          ls -l $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/
-          $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang --version
-          perl -MText::Template -e 'print "Text::Template OK\n"' || exit 1
-
-      - name: Setup cross-compile tools
-        run: |
-          export READELF=$(which readelf)
-          echo "READELF=$READELF" >> $GITHUB_ENV
-          echo "AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
-          echo "RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib" >> $GITHUB_ENV
-          echo "PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH" >> $GITHUB_ENV
-          echo "SYSROOT=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot" >> $GITHUB_ENV
-
-      - name: Prepare build directory
-        run: |
-          rm -rf $GITHUB_WORKSPACE/android-python
-          mkdir -p $GITHUB_WORKSPACE/android-python/prefix
-          echo "PYTHON_PREFIX=/data/python" >> $GITHUB_ENV
-          echo "BUILD_DIR=$GITHUB_WORKSPACE/android-python" >> $GITHUB_ENV
-
-      - name: Download Python 3.12.10
-        run: |
-          wget https://www.python.org/ftp/python/3.12.10/Python-3.12.10.tar.xz
-          echo "07ab697474595e06f06647417d3c7fa97ded07afc1a7e4454c5639919b46eaea Python-3.12.10.tar.xz" | sha256sum -c -
-          tar -xf Python-3.12.10.tar.xz
-          mv Python-3.12.10 cpython
-
-      - name: Apply Termux patches
-        run: |
-          mkdir -p patches
-          # Core Android fixes
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0001-Configure-android.patch -O patches/0001-android-configure.patch
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0002-Fix-fcntl-on-android.patch -O patches/0002-fcntl-fix.patch
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0003-Fix-socket-on-android.patch -O patches/0003-socket-fix.patch
-          
-          # Module-specific fixes
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0004-Fix-termios-on-android.patch -O patches/0004-termios-fix.patch
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0005-Disable-broken-tests.patch -O patches/0005-disable-tests.patch
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0006-Fix-posix-module.patch -O patches/0006-posix-fix.patch
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0007-Fix-sysconfig.patch -O patches/0007-sysconfig-fix.patch
-          
-          # Library integration fixes
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0008-Fix-ctypes.patch -O patches/0008-ctypes-fix.patch
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0009-Fix-multiprocessing.patch -O patches/0009-multiprocessing-fix.patch
-          wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/python/0010-Fix-ssl.patch -O patches/0010-ssl-fix.patch
-
-          cd cpython
-          for patch in ../patches/*.patch; do
-            patch -p1 < "$patch" || { echo "Failed to apply $patch"; exit 1; }
-          done
-
-      - name: Build static libraries
-        run: |
-          export CC="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
-          export CXX="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++"
-          export AR="$AR"
-          export RANLIB="$RANLIB"
-          export LDFLAGS="--sysroot=$SYSROOT -fuse-ld=lld"
-          export CFLAGS="--sysroot=$SYSROOT -O3 -fPIC"
-
-          # Build zlib
-          wget https://zlib.net/zlib-1.3.1.tar.gz
-          tar -xzf zlib-1.3.1.tar.gz
-          cd zlib-1.3.1
-          ./configure --prefix=$PYTHON_PREFIX --static
-          make -j$(nproc)
-          make install DESTDIR=$BUILD_DIR
-          cd ..
-
-          # Build OpenSSL
-          wget https://www.openssl.org/source/openssl-3.3.2.tar.gz
-          tar -xzf openssl-3.3.2.tar.gz
-          cd openssl-3.3.2
-          ./Configure android-arm64 -D__ANDROID_API__=24 no-shared --prefix=$PYTHON_PREFIX
-          make -j$(nproc)
-          make install_sw DESTDIR=$BUILD_DIR
-          cd ..
-
-          # Build SQLite
-          wget https://www.sqlite.org/2024/sqlite-autoconf-3460000.tar.gz
-          tar -xzf sqlite-autoconf-3460000.tar.gz
-          cd sqlite-autoconf-3460000
-          ./configure --host=aarch64-linux-android --prefix=$PYTHON_PREFIX --disable-shared
-          make -j$(nproc)
-          make install DESTDIR=$BUILD_DIR
-          cd ..
-
-          # Build libffi
-          wget https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz
-          tar -xzf libffi-3.4.6.tar.gz
-          cd libffi-3.4.6
-          ./configure --host=aarch64-linux-android --prefix=$PYTHON_PREFIX --disable-shared
-          make -j$(nproc)
-          make install DESTDIR=$BUILD_DIR
-          cd ..
-
-      - name: Configure Python for Android
-        run: |
-          cd cpython
-          export CC="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
-          export CXX="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++"
-          export AR="$AR"
-          export RANLIB="$RANLIB"
-          export LDFLAGS="-L$BUILD_DIR$PYTHON_PREFIX/lib --sysroot=$SYSROOT -fuse-ld=lld"
-          export CFLAGS="-I$BUILD_DIR$PYTHON_PREFIX/include --sysroot=$SYSROOT -O3 -fPIC"
-
-          # Create config.site with Termux-specific settings
-          cat > config.site << 'EOF'
-          ac_cv_file__dev_ptmx=yes
-          ac_cv_file__dev_ptc=no
-          ac_cv_func_shm_open=yes
-          ac_cv_working_tzset=yes
-          ac_cv_func_fork=no
-          ac_cv_func_forkpty=no
-          ac_cv_func_openpty=no
-          ac_cv_func_spawn=no
-          ac_cv_func_posix_spawn=no
-          ac_cv_func_gethostbyname=no
-          ac_cv_func_gethostbyaddr=no
-          ac_cv_func_epoll=no
-          ac_cv_func_epoll_create1=no
-          ac_cv_func_getentropy=no
-          EOF
-
-          ./configure \
-            --host=aarch64-linux-android \
-            --build=x86_64-linux-gnu \
-            --prefix=$PYTHON_PREFIX \
-            --disable-ipv6 \
-            --with-build-python=$(which python3) \
-            --with-system-ffi \
-            --enable-optimizations \
-            --with-lto=thin \
-            --with-ensurepip=install \
-            --without-ensurepip \
-            --disable-test-modules \
-            --without-pymalloc \
-            CONFIG_SITE=config.site
-
-      - name: Customize Modules/Setup
-        run: |
-          cd cpython
-          cat > Modules/Setup.local << 'EOF'
-          *disabled*
-          _tkinter
-          _gdbm
-          nis
-          ossaudiodev
-          spwd
-          
-          *shared*
-          zlib zlibmodule.c -I$(BUILD_DIR)$(PYTHON_PREFIX)/include -L$(BUILD_DIR)$(PYTHON_PREFIX)/lib -lz
-          _ssl _ssl.c -I$(BUILD_DIR)$(PYTHON_PREFIX)/include -L$(BUILD_DIR)$(PYTHON_PREFIX)/lib -lssl -lcrypto
-          _hashlib _hashlib.c -I$(BUILD_DIR)$(PYTHON_PREFIX)/include -L$(BUILD_DIR)$(PYTHON_PREFIX)/lib -lssl -lcrypto
-          _sqlite3 _sqlite3.c -I$(BUILD_DIR)$(PYTHON_PREFIX)/include -L$(BUILD_DIR)$(PYTHON_PREFIX)/lib -lsqlite3
-          _ctypes _ctypes.c -I$(BUILD_DIR)$(PYTHON_PREFIX)/include -L$(BUILD_DIR)$(PYTHON_PREFIX)/lib -lffi
-          EOF
-
-      - name: Build Python
-        run: |
-          cd cpython
-          make -j$(nproc)
-
-      - name: Install Python
-        run: |
-          cd cpython
-          make install DESTDIR=$BUILD_DIR
-
-      - name: Verify installation
-        run: |
-          $BUILD_DIR$PYTHON_PREFIX/bin/python3 -c "import sys; print(sys.platform)"
-          $BUILD_DIR$PYTHON_PREFIX/bin/python3 -c "import ssl; print(ssl.OPENSSL_VERSION)"
-          $BUILD_DIR$PYTHON_PREFIX/bin/python3 -c "import sqlite3; print(sqlite3.sqlite_version)"
-          $BUILD_DIR$PYTHON_PREFIX/bin/python3 -c "import zlib; print(zlib.ZLIB_VERSION)"
-
-      - name: Create final package
-        run: |
-          cd $BUILD_DIR
-          # Remove unnecessary files
-          rm -rf data/python/share/man
-          find data/python -name "__pycache__" -exec rm -rf {} +
-          find data/python -name "*.pyc" -delete
-          find data/python -name "*.pyo" -delete
-          
-          # Create tarball
-          tar -czvf python-3.12.10-android-arm64.tar.gz data
-          tar -tvf python-3.12.10-android-arm64.tar.gz | head
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-3.12.10-android-arm64
-          path: ${{ github.workspace }}/android-python/python-3.12.10-android-arm64.tar.gz
-
-      - name: Upload build logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: |
-            cpython/config.log
-            cpython/Makefile
-            */config.log
-            */Makefile
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        repository: termux/termux-packages
+        fetch-depth: 0
+        
+    - name: Set up build environment
+      run: |
+        # Create custom installation directory
+        sudo mkdir -p /data/python
+        sudo chown -R builder:builder /data/python
+        
+        # Modify Python package definition
+        sed -i 's|TERMUX_PREFIX|/data/python|g' packages/python/build.sh
+        sed -i 's|--prefix=$TERMUX_PREFIX|--prefix=/data/python|g' packages/python/build.sh
+        
+        # Install build dependencies
+        ./scripts/setup-termux.sh
+        
+    - name: Build Python package
+      run: |
+        export TERMUX_PKG_SKIP_SRC_EXTRACT=false
+        export TERMUX_PKG_BUILD_IN_SRC=true
+        export TERMUX_PREFIX=/data/python
+        export PREFIX=$TERMUX_PREFIX
+        
+        ./build-package.sh -I python
+        
+    - name: Package artifacts
+      run: |
+        # Create a tarball of the installation
+        tar -czvf python-custom-install.tar.gz -C /data python
+        
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-custom-install
+        path: python-custom-install.tar.gz
