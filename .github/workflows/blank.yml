@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang make pkg-config zlib1g-dev
+          sudo apt-get install -y build-essential clang make pkg-config zlib1g-dev autoconf
 
       # 4. 交叉编译 libiconv
       - name: Build libiconv for Android
@@ -51,7 +51,7 @@ jobs:
         run: |
           git clone https://github.com/git/git.git
           cd git
-          git checkout v2.46.0  # 确保标签可用
+          git checkout v2.46.0
 
       # 6. 应用 Termux 补丁（如果存在）
       - name: Apply Termux patches
@@ -71,6 +71,7 @@ jobs:
           export CXX=aarch64-linux-android28-clang++
           export CFLAGS="-DNO_CURL -DNO_EXPAT -DNO_TCLTK -I${LIBICONV_HOME}/include"
           export LDFLAGS="-static -L${LIBICONV_HOME}/lib"
+          make configure  # 生成 configure 脚本
           ./configure --host=aarch64-linux-android --prefix=/data/data/com.termux/files/usr
           make -j$(nproc)
 
