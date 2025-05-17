@@ -1,53 +1,74 @@
-name: Build Python for Termux (Custom Path)
+name: 构建 Python 并打包为 tar.gz
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  build-python:
+  build:
     runs-on: ubuntu-latest
-    container: termux/package-builder
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        repository: termux/termux-packages
-        fetch-depth: 0
-        
-    - name: Set up build environment
-      run: |
-        # Create custom installation directory
-        sudo mkdir -p /data/python
-        sudo chown -R builder:builder /data/python
-        
-        # Modify Python package definition
-        sed -i 's|TERMUX_PREFIX|/data/python|g' packages/python/build.sh
-        sed -i 's|--prefix=$TERMUX_PREFIX|--prefix=/data/python|g' packages/python/build.sh
-        
-        # Install build dependencies
-        ./scripts/setup-termux.sh
-        
-    - name: Build Python package
-      run: |
-        export TERMUX_PKG_SKIP_SRC_EXTRACT=false
-        export TERMUX_PKG_BUILD_IN_SRC=true
-        export TERMUX_PREFIX=/data/python
-        export PREFIX=$TERMUX_PREFIX
-        
-        ./build-package.sh -I python
-        
-    - name: Package artifacts
-      run: |
-        # Create a tarball of the installation
-        tar -czvf python-custom-install.tar.gz -C /data python
-        
-    - name: Upload artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: python-custom-install
-        path: python-custom-install.tar.gz
+      # 检出 Termux 官方仓库
+      - name: 检出 termux-packages 仓库
+        uses: actions/checkout@v4
+        with:
+          repository: termux/termux-packages
+          ref: master
+
+      # 安装系统依赖并设置 Termux 构建环境
+      - name: 设置 Termux 构建环境
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget curl git build-essential
+          ./scripts/setup-ubuntu.sh
+          ./scripts/setup-android-sdk.sh
+
+      # 创建临时安装目录
+      - name: 创建临时安装目录
+        run: |
+          mkdir -p $HOME/staging/data/python
+
+      # 修改所有相关包的 build.sh 脚本
+      - name: 修改构建脚本中的安装路径
+        run: |
+          for pkg in bzip2 libandroid-support libbz2 libcrypt libffi liblzma libuuid ncurses openssl readline sqlite zlib python; do
+            sed -i 's|--prefix=$TERMUX_PREFIX|--prefix=/data/python|g' packages/$pkg/build.sh
+            sed -i 's|-I$TERMUX_PREFIX/include|-I  packages/$pkg/build.sh
+            sed -i 's|-L$TERMUX_PREFIX/lib|-L/data/python/lib|g' packages/$pkg/build.sh
+            sed -i 's|--with-openssl=$TERMUX_PREFIX|--with-openssl=/data/python|g' packages/$pkg/build.sh
+          done
+          # 检查修改是否成功
+          grep -r --include=build.sh "/data/python" packages/
+
+      # 构建并安装依赖
+      - name: 构建并安装依赖
+        run: |
+          for pkg in bzip2 libandroid-support libbz2 libcrypt libffi liblzma libuuid ncurses openssl readline sqlite zlib; do
+            TERMUX_PREFIX=$HOME/staging/data/python ./build-package.sh -i $pkg
+          done
+
+      # 构建并安装 Python
+      - name: 构建并安装 Python
+        run: |
+          TERMUX_PREFIX=$HOME/staging/data/python ./build-package.sh -i python
+
+      # 创建 tar.gz 归档
+      - name: 创建 tar.gz 归档
+        run: |
+          cd $HOME/staging
+          tar -czpf python-3.11.4.tar.gz --preserve-permissions --no-acls --no-xattrs data/python
+          mkdir -p artifacts
+          mv python-3.11.4.tar.gz artifacts/
+          ls -lh artifacts/
+
+      # 上传归档文件
+      - name: 上传 tar.gz 文件
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-tar
+          path: artifacts/
