@@ -1,0 +1,77 @@
+name: Build Git for Android 9 with Termux and NDK
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-git:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 安装 Android NDK
+      - name: Install Android NDK
+        run: |
+          wget https://dl.google.com/android/repository/android-ndk-r26b-linux.zip
+          unzip android-ndk-r26b-linux.zip -d /opt
+          echo "ANDROID_NDK_HOME=/opt/android-ndk-r26b" >> $GITHUB_ENV
+          echo "/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+
+      # 3. 安装编译工具和依赖
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang make pkg-config zlib1g-dev libiconv-dev
+
+      # 4. 克隆 Git 源码
+      - name: Clone Git source
+        run: |
+          git clone --depth 1 https://github.com/git/git.git
+          cd git
+          git checkout v2.46.0  # 最新稳定版，兼容性好
+
+      # 5. 应用 Termux 补丁（如果存在）
+      - name: Apply Termux patches
+        run: |
+          # 如果有补丁文件，替换以下 URL；若无补丁，跳过此步
+          # wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/git/fix-some-issue.patch -O termux-git.patch
+          # cd git
+          # git apply ../termux-git.patch
+          echo "No patches applied (placeholder). Provide Termux patch URL if needed."
+
+      # 6. 配置并编译 Git
+      - name: Configure and build Git
+        run: |
+          cd git
+          export PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
+          export CC=aarch64-linux-android28-clang  # 针对 API 28 (Android 9)
+          export CXX=aarch64-linux-android28-clang++
+          export CFLAGS="-DNO_CURL -DNO_EXPAT -DNO_TCLTK"  # Termux 官方禁用规则
+          export LDFLAGS="-static"  # 静态链接
+          ./configure --host=aarch64-linux-android --prefix=/data/data/com.termux/files/usr
+          make -j$(nproc)
+
+      # 7. 打包二进制
+      - name: Package binary
+        run: |
+          cd git
+          make install DESTDIR=/tmp/git-install
+          tar -czf git-termux.tar.gz -C /tmp/git-install .
+          cp /tmp/git-install/data/data/com.termux/files/usr/bin/git git-binary
+
+      # 8. 上传产物
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: git-termux
+          path: |
+            git/git-termux.tar.gz
+            git/git-binary
