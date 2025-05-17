@@ -21,8 +21,8 @@ jobs:
                                  libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
                                  liblzma-dev git tar python3 python3-pip unzip binutils
 
-      - name: 设置 Android NDK (r27.2.12479018)
-        uses: android-actions/setup-android-ndk@v2
+      - name: 设置 Android NDK
+        uses: android-actions/setup-android@v2
         with:
           ndk-version: "27.2.12479018"
 
@@ -34,74 +34,34 @@ jobs:
       - name: 设置交叉编译工具链
         run: |
           export READELF=$(which readelf)
-          if [ ! -f "$READELF" ]; then
-            sudo apt-get install -y binutils
-            export READELF=$(which readelf)
-          fi
           echo "READELF=$READELF" >> $GITHUB_ENV
           echo "AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
           echo "RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib" >> $GITHUB_ENV
 
-      - name: 下载 Python 3.10.0 源码
+      - name: 下载并编译 Python 3.10.0
         run: |
           wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz
           tar -xzf Python-3.10.0.tgz
-          mv Python-3.10.0 cpython
-
-      - name: 下载并解压 zlib
-        run: |
-          wget https://github.com/madler/zlib/archive/refs/tags/v1.2.13.tar.gz -O zlib-1.2.13.tar.gz
-          tar -xzf zlib-1.2.13.tar.gz
-          cd zlib-1.2.13
-
-      - name: 编译 zlib
-        run: |
-          cd zlib-1.2.13
-          ./configure --prefix=/data/python
-          make -j$(nproc)
-          make install
-
-      - name: 配置 Python (Android ARM64)
-        run: |
-          cd cpython
-          export CONFIG_SITE=config.site
-          cat <<EOF > $CONFIG_SITE
-          ac_cv_file__dev_ptmx=yes
-          ac_cv_file__dev_ptc=no
-          EOF
-
+          cd Python-3.10.0
+          
           ./configure \
             --host=aarch64-linux-android \
-            --build=x86_64-linux-gnu \
             --prefix=/data/python \
             --disable-ipv6 \
-            --with-system-ffi \
-            CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
-            CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ \
-            AR=$AR \
-            RANLIB=$RANLIB \
-            READELF=$READELF
-
-      - name: 编译并安装 Python
-        run: |
-          cd cpython
+            CC="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang" \
+            AR="$AR" \
+            RANLIB="$RANLIB"
+          
           make -j$(nproc)
-          mkdir -p /data/python  # 确保目标目录存在
+          mkdir -p /data/python
           make install
 
-      - name: 修复 shebang
-        run: |
-          find /data/python/bin -type f -exec grep -l '^#!' {} \; | while read -r file; do
-            sed -i "1s|.*|#!/data/python/bin/python3.10|" "$file"
-          done
-
-      - name: 打包 Python 安装目录
+      - name: 打包 Python
         run: |
           tar -czvf python-android-arm64.tar.gz -C /data python
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: python-android-arm64-ndk27
-          path: |
-            python-android-arm64.tar.gz
+          name: python-android-arm64
+          path: python-android-arm64.tar.gz
