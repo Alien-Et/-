@@ -29,25 +29,31 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang make pkg-config zlib1g-dev libc6-dev
-          # 如果需要 libiconv，手动编译（取消注释以下代码）
-          # wget https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.18.tar.gz
-          # tar -xzf libiconv-1.18.tar.gz
-          # cd libiconv-1.18
-          # ./configure --prefix=/usr/local
-          # make -j$(nproc)
-          # sudo make install
-          # echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/libiconv.conf
-          # sudo ldconfig
+          sudo apt-get install -y build-essential clang make pkg-config zlib1g-dev
 
-      # 4. 克隆 Git 源码
+      # 4. 交叉编译 libiconv
+      - name: Build libiconv for Android
+        run: |
+          wget https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.18.tar.gz
+          tar -xzf libiconv-1.18.tar.gz
+          cd libiconv-1.18
+          export CC=aarch64-linux-android28-clang
+          export CXX=aarch64-linux-android28-clang++
+          export CFLAGS="-fPIC"
+          export LDFLAGS="-static"
+          ./configure --host=aarch64-linux-android --prefix=/opt/libiconv
+          make -j$(nproc)
+          make install
+          echo "LIBICONV_HOME=/opt/libiconv" >> $GITHUB_ENV
+
+      # 5. 克隆 Git 源码
       - name: Clone Git source
         run: |
-          git clone --depth 1 https://github.com/git/git.git
+          git clone https://github.com/git/git.git
           cd git
-          git checkout v2.46.0  # 最新稳定版
+          git checkout v2.46.0  # 确保标签可用
 
-      # 5. 应用 Termux 补丁（如果存在）
+      # 6. 应用 Termux 补丁（如果存在）
       - name: Apply Termux patches
         run: |
           # 如果有补丁，替换 URL；若无，跳过
@@ -56,22 +62,19 @@ jobs:
           # git apply ../termux-git.patch
           echo "No patches applied. Provide Termux patch URL if needed."
 
-      # 6. 配置并编译 Git
+      # 7. 配置并编译 Git
       - name: Configure and build Git
         run: |
           cd git
           export PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
-          export CC=aarch64-linux-android28-clang  # 针对 API 28 (Android 9)
+          export CC=aarch64-linux-android28-clang
           export CXX=aarch64-linux-android28-clang++
-          export CFLAGS="-DNO_CURL -DNO_EXPAT -DNO_TCLTK"  # Termux 官方禁用规则
-          export LDFLAGS="-static"  # 静态链接
-          # 如果手动安装 libiconv，添加库路径
-          # export LDFLAGS="-static -L/usr/local/lib"
-          # export CFLAGS="-DNO_CURL -DNO_EXPAT -DNO_TCLTK -I/usr/local/include"
+          export CFLAGS="-DNO_CURL -DNO_EXPAT -DNO_TCLTK -I${LIBICONV_HOME}/include"
+          export LDFLAGS="-static -L${LIBICONV_HOME}/lib"
           ./configure --host=aarch64-linux-android --prefix=/data/data/com.termux/files/usr
           make -j$(nproc)
 
-      # 7. 打包二进制
+      # 8. 打包二进制
       - name: Package binary
         run: |
           cd git
@@ -79,7 +82,7 @@ jobs:
           tar -czf git-termux.tar.gz -C /tmp/git-install .
           cp /tmp/git-install/data/data/com.termux/files/usr/bin/git git-binary
 
-      # 8. 上传产物
+      # 9. 上传产物
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
