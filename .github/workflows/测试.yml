@@ -37,12 +37,13 @@ jobs:
       - name: 修改构建脚本中的安装路径
         run: |
           set -x
-          for pkg in bzip2 libandroid-support libbz2 libcrypt libffi liblzma libuuid ncurses openssl readline sqlite zlib python; do
+          # 更新依赖列表，移除可能已废弃的 libandroid-support
+          for pkg in bzip2 libbz2 libcrypt libffi liblzma libuuid ncurses openssl readline sqlite zlib python; do
             if [ -f "packages/$pkg/build.sh" ]; then
-              sed -i 's#--prefix=$TERMUX_PREFIX#--prefix=/data/python#g' packages/$pkg/build.sh || true
-              sed -i 's#-I$TERMUX_PREFIX/include#-I/data/python/include#g' packages/$pkg/build.sh || true
-              sed -i 's#-L$TERMUX_PREFIX/lib#-L/data/python/lib#g' packages/$pkg/build.sh || true
-              sed -i 's#--with-openssl=$TERMUX_PREFIX#--with-openssl=/data/python#g' packages/$pkg/build.sh || true
+              sed -i 's#--prefix=$TERMUX_PREFIX#--prefix=/data/python#g' packages/$pkg/build.sh
+              sed -i 's#-I$TERMUX_PREFIX/include#-I/data/python/include#g' packages/$pkg/build.sh
+              sed -i 's#-L$TERMUX_PREFIX/lib#-L/data/python/lib#g' packages/$pkg/build.sh
+              sed -i 's#--with-openssl=$TERMUX_PREFIX#--with-openssl=/data/python#g' packages/$pkg/build.sh
               echo "已修改 packages/$pkg/build.sh"
               cat packages/$pkg/build.sh
             else
@@ -54,11 +55,14 @@ jobs:
       - name: 构建并安装依赖
         run: |
           set -x
-          for pkg in bzip2 libandroid-support libbz2 libcrypt libffi liblzma libuuid ncurses openssl readline sqlite zlib; do
+          for pkg in bzip2 libbz2 libcrypt libffi liblzma libuuid ncurses openssl readline sqlite zlib; do
             if [ -d "packages/$pkg" ]; then
-              TERMUX_PREFIX=$HOME/staging/data/python ./build-package.sh -i $pkg || echo "警告: 构建 $pkg 失败"
+              TERMUX_PREFIX=$HOME/staging/data/python ./build-package.sh -i $pkg
+              echo "检查 $pkg 安装情况:"
+              ls -l $HOME/staging/data/python || true
             else
-              echo "警告: 包 $pkg 不存在，跳过"
+              echo "错误: 包 $pkg 不存在"
+              exit 1
             fi
           done
 
@@ -67,16 +71,26 @@ jobs:
         run: |
           set -x
           TERMUX_PREFIX=$HOME/staging/data/python ./build-package.sh -i python
+          echo "检查 Python 安装情况:"
+          ls -l $HOME/staging/data/python/bin || true
+          if [ -f "$HOME/staging/data/python/bin/python3" ]; then
+            echo "Python 可执行文件存在"
+            $HOME/staging/data/python/bin/python3 --version
+          else
+            echo "错误: Python 未正确安装"
+            exit 1
+          fi
 
       # 创建 tar.gz 归档
       - name: 创建 tar.gz 归档
         run: |
           set -x
           # 提取 Python 版本
-          PYTHON_VERSION=$(grep TERMUX_PKG_VERSION packages/python/build.sh | cut -d= -f2 | tr -d '"')
+          PYTHON_VERSION=$(grep '^TERMUX_PKG_VERSION=' packages/python/build.sh | cut -d= -f2 | tr -d '"' | head -n 1)
           echo "Python 版本: $PYTHON_VERSION"
           # 验证安装目录
           if [ -d "$HOME/staging/data/python/bin" ]; then
+            echo "安装目录内容:"
             ls -lR $HOME/staging/data/python
           else
             echo "错误: $HOME/staging/data/python 未正确填充"
@@ -109,4 +123,4 @@ jobs:
         with:
           name: python-tar
           path: artifacts/
-          if-no-files-found: error  # 如果未找到文件，报错
+          if-no-files-found: error
