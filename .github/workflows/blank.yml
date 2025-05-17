@@ -29,23 +29,32 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang make pkg-config zlib1g-dev libiconv-dev
+          sudo apt-get install -y build-essential clang make pkg-config zlib1g-dev libc6-dev
+          # 如果需要 libiconv，手动编译（取消注释以下代码）
+          # wget https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.18.tar.gz
+          # tar -xzf libiconv-1.18.tar.gz
+          # cd libiconv-1.18
+          # ./configure --prefix=/usr/local
+          # make -j$(nproc)
+          # sudo make install
+          # echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/libiconv.conf
+          # sudo ldconfig
 
       # 4. 克隆 Git 源码
       - name: Clone Git source
         run: |
           git clone --depth 1 https://github.com/git/git.git
           cd git
-          git checkout v2.46.0  # 最新稳定版，兼容性好
+          git checkout v2.46.0  # 最新稳定版
 
       # 5. 应用 Termux 补丁（如果存在）
       - name: Apply Termux patches
         run: |
-          # 如果有补丁文件，替换以下 URL；若无补丁，跳过此步
+          # 如果有补丁，替换 URL；若无，跳过
           # wget https://raw.githubusercontent.com/termux/termux-packages/master/packages/git/fix-some-issue.patch -O termux-git.patch
           # cd git
           # git apply ../termux-git.patch
-          echo "No patches applied (placeholder). Provide Termux patch URL if needed."
+          echo "No patches applied. Provide Termux patch URL if needed."
 
       # 6. 配置并编译 Git
       - name: Configure and build Git
@@ -56,6 +65,9 @@ jobs:
           export CXX=aarch64-linux-android28-clang++
           export CFLAGS="-DNO_CURL -DNO_EXPAT -DNO_TCLTK"  # Termux 官方禁用规则
           export LDFLAGS="-static"  # 静态链接
+          # 如果手动安装 libiconv，添加库路径
+          # export LDFLAGS="-static -L/usr/local/lib"
+          # export CFLAGS="-DNO_CURL -DNO_EXPAT -DNO_TCLTK -I/usr/local/include"
           ./configure --host=aarch64-linux-android --prefix=/data/data/com.termux/files/usr
           make -j$(nproc)
 
