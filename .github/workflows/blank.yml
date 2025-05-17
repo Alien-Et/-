@@ -71,8 +71,9 @@ jobs:
           export CXX=aarch64-linux-android28-clang++
           export CFLAGS="-DNO_CURL -DNO_EXPAT -DNO_TCLTK -I${LIBICONV_HOME}/include"
           export LDFLAGS="-static -L${LIBICONV_HOME}/lib"
-          make configure  # 生成 configure 脚本
-          ./configure --host=aarch64-linux-android --prefix=/data/data/com.termux/files/usr
+          export ac_cv_iconv_omit_bom=yes  # 跳过 iconv BOM 测试
+          make configure
+          ./configure --host=aarch64-linux-android --prefix=/data/data/com.termux/files/usr --with-libiconv-prefix=${LIBICONV_HOME}
           make -j$(nproc)
 
       # 8. 打包二进制
