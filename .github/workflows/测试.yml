@@ -36,17 +36,17 @@ jobs:
       # 修改所有相关包的 build.sh 脚本
       - name: 修改构建脚本中的安装路径
         run: |
-          set -x  # 启用调试
+          set -x
           for pkg in bzip2 libandroid-support libbz2 libcrypt libffi liblzma libuuid ncurses openssl readline sqlite zlib python; do
             if [ -f "packages/$pkg/build.sh" ]; then
               sed -i 's#--prefix=$TERMUX_PREFIX#--prefix=/data/python#g' packages/$pkg/build.sh || true
               sed -i 's#-I$TERMUX_PREFIX/include#-I/data/python/include#g' packages/$pkg/build.sh || true
               sed -i 's#-L$TERMUX_PREFIX/lib#-L/data/python/lib#g' packages/$pkg/build.sh || true
               sed -i 's#--with-openssl=$TERMUX_PREFIX#--with-openssl=/data/python#g' packages/$pkg/build.sh || true
-              echo "Modified packages/$pkg/build.sh"
+              echo "已修改 packages/$pkg/build.sh"
               cat packages/$pkg/build.sh
             else
-              echo "Warning: packages/$pkg/build.sh does not exist, skipping"
+              echo "警告: packages/$pkg/build.sh 不存在，跳过"
             fi
           done
 
@@ -56,9 +56,9 @@ jobs:
           set -x
           for pkg in bzip2 libandroid-support libbz2 libcrypt libffi liblzma libuuid ncurses openssl readline sqlite zlib; do
             if [ -d "packages/$pkg" ]; then
-              TERMUX_PREFIX=$HOME/staging/data/python ./build-package.sh -i $pkg || echo "Warning: Failed to build $pkg"
+              TERMUX_PREFIX=$HOME/staging/data/python ./build-package.sh -i $pkg || echo "警告: 构建 $pkg 失败"
             else
-              echo "Warning: Package $pkg does not exist, skipping"
+              echo "警告: 包 $pkg 不存在，跳过"
             fi
           done
 
@@ -72,11 +72,36 @@ jobs:
       - name: 创建 tar.gz 归档
         run: |
           set -x
+          # 提取 Python 版本
+          PYTHON_VERSION=$(grep TERMUX_PKG_VERSION packages/python/build.sh | cut -d= -f2 | tr -d '"')
+          echo "Python 版本: $PYTHON_VERSION"
+          # 验证安装目录
+          if [ -d "$HOME/staging/data/python/bin" ]; then
+            ls -lR $HOME/staging/data/python
+          else
+            echo "错误: $HOME/staging/data/python 未正确填充"
+            exit 1
+          fi
+          # 创建归档
           cd $HOME/staging
-          tar -czpf python-3.11.4.tar.gz --preserve-permissions --no-acls --no-xattrs data/python
+          tar -czpf python-${PYTHON_VERSION}.tar.gz --preserve-permissions --no-acls --no-xattrs data/python || {
+            echo "错误: tar 归档失败"
+            exit 1
+          }
+          # 确保 artifacts 目录存在
           mkdir -p artifacts
-          mv python-3.11.4.tar.gz artifacts/
+          mv python-${PYTHON_VERSION}.tar.gz artifacts/ || {
+            echo "错误: 移动 tar.gz 文件失败"
+            exit 1
+          }
+          # 验证归档文件
           ls -lh artifacts/
+          if [ -f "artifacts/python-${PYTHON_VERSION}.tar.gz" ]; then
+            echo "归档文件创建成功: artifacts/python-${PYTHON_VERSION}.tar.gz"
+          else
+            echo "错误: 归档文件未找到"
+            exit 1
+          fi
 
       # 上传归档文件
       - name: 上传 tar.gz 文件
@@ -84,3 +109,4 @@ jobs:
         with:
           name: python-tar
           path: artifacts/
+          if-no-files-found: error  # 如果未找到文件，报错
