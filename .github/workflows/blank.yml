@@ -73,7 +73,7 @@ jobs:
           # wget -q https://raw.githubusercontent.com/termux/termux-packages/master/packages/git/fix-some-issue.patch
           # git apply fix-some-issue.patch
 
-      # 7. 配置并编译 Git
+      # 7. 配置并编译 Git (修复后的版本)
       - name: Configure and build Git
         run: |
           cd git
@@ -83,7 +83,7 @@ jobs:
           export CFLAGS="-DNO_CURL -DNO_EXPAT -DNO_TCLTK -I${LIBICONV_HOME}/include"
           export LDFLAGS="-static -L${LIBICONV_HOME}/lib"
           
-          # 预定义测试结果以避免交叉编译测试
+          # 彻底禁用所有运行时测试
           export ac_cv_func_iconv=yes
           export ac_cv_iconv_omit_bom=yes
           export ac_cv_iconv_utf_bom=no
@@ -92,7 +92,14 @@ jobs:
           export ac_cv_iconv_works=yes
           export ac_cv_func_gettext=no
           export ac_cv_lib_intl_gettext=no
+          export ac_cv_header_libintl_h=no
           export cross_compiling=yes
+          
+          # 创建伪造的测试程序返回值
+          echo "#!/bin/sh" > test-program
+          echo "exit 0" >> test-program
+          chmod +x test-program
+          export PATH=$(pwd):$PATH
 
           make configure
           ./configure \
@@ -104,7 +111,8 @@ jobs:
             --without-expat \
             --without-tcltk \
             --with-openssl \
-            --with-zlib
+            --with-zlib \
+            --disable-rpath
 
           make -j$(nproc) NO_MSGFMT=1 NO_GETTEXT=1
 
